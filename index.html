@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>巫女組 - 入口</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* テキストに影をつけ、背景動画の上でも読みやすくします */
+        .text-shadow {
+            text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+        /* 鳥居ボタンの上の笠木（かさぎ）を表現するためのカスタムスタイル */
+        .torii-button::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -15px;
+            right: -15px;
+            height: 10px;
+            background-color: #c53030; /* bg-red-700 */
+            border-radius: 5px 5px 0 0;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
+        }
+        /* フォント設定 */
+        body {
+            font-family: 'Shippori Mincho', serif;
+        }
+    </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-black text-white">
+
+    <!-- 背景動画 -->
+    <div class="fixed top-0 left-0 w-full h-full -z-10">
+        <video id="backgroundVideo" class="w-full h-full object-cover" autoplay loop muted playsinline poster="https://placehold.co/1280x720/000000/ffffff?text=Loading...">
+            <!-- 動画ファイルを指定 -->
+            <source src="miko_movie.mp4" type="video/mp4">
+            お使いのブラウザは動画タグをサポートしていません。
+        </video>
+        <!-- オーバーレイの透明度を調整 (opacity-50 から opacity-30へ) -->
+        <div class="absolute top-0 left-0 w-full h-full bg-black opacity-30"></div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <main class="min-h-screen flex flex-col items-center justify-end p-4 pb-32">
+        <button id="enterButton" class="torii-button relative bg-red-600 hover:bg-red-700 text-white font-bold text-2xl py-4 px-12 rounded-lg shadow-lg transition-transform transform hover:scale-105 focus:outline-none">
+            参拝する
+        </button>
+    </main>
+
+    <!-- 音量切り替えボタン -->
+    <button id="volumeButton" class="fixed bottom-5 right-5 text-white bg-black bg-opacity-50 rounded-full p-3 focus:outline-none hover:bg-opacity-75">
+        <svg id="volumeOn" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+        <svg id="volumeOff" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+    </button>
+
+    <!-- パスワード入力モーダル (初期状態では非表示) -->
+    <div id="passwordModal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-gray-900 border border-red-700 p-8 rounded-lg shadow-xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold mb-4">合言葉</h2>
+            <p class="text-gray-400 mb-6">参拝の合言葉を入力してください。</p>
+            <form id="passwordForm">
+                <input type="password" id="passwordInput" class="bg-gray-800 text-white border-2 border-gray-600 rounded-lg w-full p-3 mb-4 focus:border-red-500 focus:outline-none text-center" placeholder="******">
+                <p id="errorMessage" class="text-red-500 h-6 mb-2"></p>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                    進む
+                </button>
+            </form>
+             <button id="closeModalButton" class="text-gray-400 hover:text-white mt-4">
+                戻る
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 設定項目 ---
+        const correctPassword = "mikomiko35";
+        // ---------------
+
+        const enterButton = document.getElementById('enterButton');
+        const passwordModal = document.getElementById('passwordModal');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const passwordForm = document.getElementById('passwordForm');
+        const passwordInput = document.getElementById('passwordInput');
+        const errorMessage = document.getElementById('errorMessage');
+        const video = document.getElementById('backgroundVideo');
+        const volumeButton = document.getElementById('volumeButton');
+        const volumeOnIcon = document.getElementById('volumeOn');
+        const volumeOffIcon = document.getElementById('volumeOff');
+
+        // 「参拝する」ボタンをクリックしたらモーダルを表示
+        enterButton.addEventListener('click', () => {
+            passwordModal.classList.remove('hidden');
+            passwordInput.focus();
+        });
+
+        // 「戻る」ボタンでモーダルを閉じる
+        closeModalButton.addEventListener('click', () => {
+            passwordModal.classList.add('hidden');
+            errorMessage.textContent = '';
+            passwordInput.value = '';
+        });
+        
+        // 音量ボタンのクリック処理
+        volumeButton.addEventListener('click', () => {
+            video.muted = !video.muted;
+            volumeOnIcon.classList.toggle('hidden');
+            volumeOffIcon.classList.toggle('hidden');
+        });
+
+        // パスワードフォームが送信されたときの処理
+        passwordForm.addEventListener('submit', (event) => {
+            event.preventDefault(); // フォームのデフォルトの送信をキャンセル
+            
+            if (passwordInput.value === correctPassword) {
+                // パスワードが正しい場合
+                errorMessage.textContent = '認証成功！';
+                sessionStorage.setItem('mikoGuildAuthenticated', 'true');
+                window.location.href = 'contents.html';
+            } else {
+                // パスワードが間違っている場合
+                errorMessage.textContent = '合言葉が違います。';
+                passwordInput.value = ''; // 入力フィールドをクリア
+            }
+        });
+    </script>
+</body>
+</html>
