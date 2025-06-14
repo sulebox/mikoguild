@@ -9,7 +9,6 @@
         // ページの読み込み時、最初に認証チェックを行う
         // sessionStorageに認証フラグがなければ、入口ページに強制的に戻す
         if (sessionStorage.getItem('mikoGuildAuthenticated') !== 'true') {
-            // ★★★ 戻り先のURLをフルパスに変更 ★★★
             window.location.replace('https://sulebox.github.io/mikoguild/index.html');
         }
     </script>
@@ -18,30 +17,38 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
         body {
             font-family: 'Noto Sans JP', sans-serif;
-            background-color: #F1EFE3; /* 暖かみのあるベージュ */
-            color: #333;
+            background-color: #351715; /* 指定の背景色 */
+            color: #e5e7eb; /* 明るいグレー (Tailwind text-gray-200) */
         }
         .main-container {
             max-width: 600px;
             margin: 0 auto;
         }
         .action-button {
-            background-color: #fff;
-            border: 1px solid #ddd;
+            /* ダークテーマ用にボタンのスタイルを調整 */
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f3f4f6; /* text-gray-100 */
             border-radius: 9999px; /* pill shape */
             padding: 10px 20px;
             font-weight: 700;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .action-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
         }
         .dropdown-menu {
-            border: 1px solid #ddd;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            /* プルダウンメニューもダークテーマに */
+            background-color: #374151; /* bg-gray-700 */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -50,46 +57,72 @@
     <div class="main-container p-6 pt-10">
         
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800">巫女組ギルド</h1>
-            <p class="text-gray-600 mt-2">みんな仲良くね</p>
+            <h1 class="text-4xl font-bold text-gray-100">巫女組ギルド</h1>
+            <p class="text-gray-300 mt-2">みんな仲良くね^^</p>
+            <!-- ロゴ画像を追加 -->
+            <img src="logo.png" alt="巫女組ロゴ" class="mx-auto my-6 w-24 h-24 object-cover rounded-full shadow-lg"
+                 onerror="this.style.display='none'; this.onerror=null;">
         </header>
 
         <main>
             <!-- お知らせセクション -->
-            <section class="bg-white p-6 rounded-2xl shadow-md mb-8">
-                <h2 class="text-xl font-bold mb-3">おしらせ</h2>
-                <div class="bg-gray-50 p-4 rounded-lg text-gray-700">
+            <section class="bg-black bg-opacity-20 p-6 rounded-2xl shadow-md mb-8">
+                <h2 class="text-xl font-bold mb-3 text-gray-100">おしらせ</h2>
+                <div class="bg-black bg-opacity-20 p-4 rounded-lg text-gray-200">
                     <!-- ここにお知らせの内容を記述 -->
                     <p>次回のギルド集会はXX月XX日 21:00からです！新しいレイドボスについて話し合いますので、皆さん奮ってご参加ください。</p>
                 </div>
             </section>
 
             <!-- アクションボタンセクション -->
-            <section class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <!-- ギルド規約 -->
-                <a href="https://sulebox.github.io/mikoguild/rules.html" target="_blank" class="action-button">ギルド規約</a>
+            <section class="text-center mt-8">
+                <!-- ギルド規約 (テキストリンク) -->
+                <a href="https://sulebox.github.io/mikoguild/rules.html" target="_blank" class="text-gray-300 hover:text-white underline mb-8 block">
+                    ギルド規約
+                </a>
                 
-                <!-- お賽銭 (プルダウン) -->
-                <div class="relative">
-                    <button id="saisenButton" class="action-button w-full">お賽銭</button>
-                    <div id="saisenMenu" class="hidden absolute left-0 mt-2 w-full bg-white rounded-xl dropdown-menu z-10">
-                        <a href="https://docs.google.com/spreadsheets/d/1Go83RWmaK6wqw-QProgkLLGgY70-_eMU7SitMDXAGX8/edit?usp=drive_link" target="_blank" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-t-xl">巫女組</a>
-                        <a href="https://docs.google.com/spreadsheets/d/15i-4A8Jr4GoQuIkVBG0Py_a5et-oT78cXOxZ1uIOUQI/edit?usp=drive_link" target="_blank" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100">2ndシース</a>
-                        <a href="#" class="block px-4 py-3 text-sm text-gray-400 cursor-not-allowed rounded-b-xl">巫女神社 (準備中)</a>
+                <!-- 3つのボタン -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- お賽銭 (プルダウン) -->
+                    <div class="relative">
+                        <button id="saisenButton" class="action-button w-full">
+                            <!-- アイコン: Coin -->
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="ml-2">お賽銭</span>
+                        </button>
+                        <div id="saisenMenu" class="hidden absolute left-0 mt-2 w-full rounded-xl dropdown-menu z-10 text-left">
+                            <a href="https://docs.google.com/spreadsheets/d/1Go83RWmaK6wqw-QProgkLLGgY70-_eMU7SitMDXAGX8/edit?usp=drive_link" target="_blank" class="block px-4 py-3 text-sm text-gray-200 hover:bg-gray-600 rounded-t-xl">巫女組</a>
+                            <a href="https://docs.google.com/spreadsheets/d/15i-4A8Jr4GoQuIkVBG0Py_a5et-oT78cXOxZ1uIOUQI/edit?usp=drive_link" target="_blank" class="block px-4 py-3 text-sm text-gray-200 hover:bg-gray-600">2ndシース</a>
+                            <a href="#" class="block px-4 py-3 text-sm text-gray-500 cursor-not-allowed rounded-b-xl">巫女神社 (準備中)</a>
+                        </div>
                     </div>
+
+                    <!-- STランキング -->
+                    <a href="https://sulebox.github.io/mikoguild/rank.html" target="_blank" class="action-button">
+                        <!-- アイコン: Trophy -->
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                           <path d="M11.983 1.904a1.75 1.75 0 00-3.966 0l-3.173 6.434-7.098 1.03a1.75 1.75 0 00-.97 2.98l5.136 4.994L2.64 20.67a1.75 1.75 0 002.54 1.844L12 18.23l6.82 3.284a1.75 1.75 0 002.54-1.844l-1.223-7.228 5.136-4.994a1.75 1.75 0 00-.97-2.98l-7.098-1.03L11.983 1.904z" />
+                        </svg>
+                        <span class="ml-2">STランキング</span>
+                    </a>
+
+                    <!-- 防衛戦 -->
+                    <a href="https://docs.google.com/spreadsheets/d/1M9p_N-bBvN3SiFn7TZog0nhRdJYBtOfUmkp8hlPkjNo/edit?usp=drive_link" target="_blank" class="action-button">
+                        <!-- アイコン: Shield -->
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5.09.954.954 0 002.5 6.333V10a.954.954 0 00.5.833l7 4.667a.954.954 0 001 0l7-4.667A.954.954 0 0017.5 10V6.333a.954.954 0 00.334-1.243A11.954 11.954 0 0110 1.944zM8.5 9.444a.5.5 0 00-.5.5v2a.5.5 0 00.5.5h3a.5.5 0 00.5-.5v-2a.5.5 0 00-.5-.5h-3z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="ml-2">防衛戦</span>
+                    </a>
                 </div>
-
-                <!-- STランキング -->
-                <a href="https://sulebox.github.io/mikoguild/rank.html" target="_blank" class="action-button">STランキング</a>
-
-                <!-- 防衛戦 -->
-                <a href="https://docs.google.com/spreadsheets/d/1M9p_N-bBvN3SiFn7TZog0nhRdJYBtOfUmkp8hlPkjNo/edit?usp=drive_link" target="_blank" class="action-button">防衛戦</a>
             </section>
         </main>
         
         <footer class="text-center mt-12">
-             <button id="logoutButton" class="text-sm text-gray-500 hover:text-red-600 transition-colors">
-                退出する
+             <button id="logoutButton" class="text-sm text-gray-400 hover:text-red-500 transition-colors">
+                もう帰るから、またね！
             </button>
         </footer>
 
@@ -100,7 +133,6 @@
         const logoutButton = document.getElementById('logoutButton');
         logoutButton.addEventListener('click', () => {
             sessionStorage.removeItem('mikoGuildAuthenticated');
-            // ★★★ 戻り先のURLをフルパスに変更 ★★★
             window.location.replace('https://sulebox.github.io/mikoguild/index.html');
         });
 
