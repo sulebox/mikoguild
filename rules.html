@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ギルド規約</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #351715; /* 背景色を統一 */
+            color: #3f3f46; /* text-zinc-700 */
+        }
+        .main-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background-color: #F1EFE3; /* メインコンテンツの背景色 */
+            border-radius: 1.5rem;
+            padding: 2rem 2.5rem; /* パディングを調整 */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        h2 {
+            font-size: 1.75rem; /* 少し大きく */
+            font-weight: 700;
+            border-bottom: 2px solid #cebca2;
+            padding-bottom: 0.75rem;
+            margin-top: 3.5rem; /* スペースを広げる */
+            margin-bottom: 1.5rem;
+            color: #44403c; /* text-stone-700 */
+        }
+        h2:first-of-type {
+            margin-top: 2.5rem; /* 最初のh2だけ上のスペースは通常通り */
+        }
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #57534e; /* text-stone-600 */
+        }
+        .main-list > li {
+            padding: 1rem;
+            border-bottom: 1px solid #e7e5e4; /* stone-200 */
+        }
+         .main-list > li:last-child {
+            border-bottom: none;
+        }
+        .sub-list {
+            margin-top: 0.75rem;
+            padding-left: 1rem;
+            color: #78716c; /* stone-500 */
+        }
+        .sub-list li::before {
+            content: "※";
+            margin-right: 0.5rem;
+            color: #a8a29e; /* stone-400 */
+        }
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f3f4f6;
+            border-radius: 9999px;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            margin-bottom: 1rem;
+        }
+        .back-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="p-4">
+        <!-- 戻るボタン -->
+        <a href="https://sulebox.github.io/mikoguild/contents.html" class="back-button">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            戻る
+        </a>
+    </div>
+
+    <div class="main-container">
+        <header class="text-center mb-6">
+            <h1 class="text-4xl font-bold text-stone-800">ギルド規約</h1>
+            <p class="text-stone-600 mt-4 max-w-2xl mx-auto">ギルド規則／方針になります。<br>定期的に更新して行きますのでご確認をよろしくお願い致します。<br>また、お手数ではございますがギルド連絡事項も過去に遡って確認をお願いします。</p>
+        </header>
+
+        <section>
+            <h2>ギルド規則／方針</h2>
+            <ul class="main-list">
+                <li>お賽銭管理表がスプシ関連テキストにありますので詳細をご入力お願いします。
+                    <ul class="sub-list">
+                        <li>創業当初加入と中途加入に累計ミニロンドの乖離がありますが総額累計の多い方にはランキング等で恩恵がある仕組みを今後作る予定になります</li>
+                        <li>SG巫女神社はまだシートに組み込んでないので自主管理になります</li>
+                        <li>SG巫女神社はランキング開始時期未定</li>
+                    </ul>
+                </li>
+                <li>ギルド内情報について、ギルメンのみが知る攻略法、情報等の外部流出は禁止します。</li>
+                <li>マクロ狩りやbotツールの使用は禁止になります（発覚した場合は追放対象となります）。</li>
+                <li>当ギルドをメインとして頂ければ、ギルド、コミュニティの掛け持ちは可とします。</li>
+                <li>ギルドで配布されたNFTを2次流通へ流すのは基本的にNGとします（見た目おしゃれ等）。</li>
+                <li>ギルドコンテンツについて
+                     <ul class="sub-list">
+                        <li>参加メンバーにつきましては設定人数が下回ったときはステータスランキング表の強い順にいれて構成予定です（コンテンツ次第で臨機応変に変更）。また、今後のギルド報酬の分配方法等についてもランキングを考慮していく予定になります。</li>
+                        <li>ギルドダンジョンは極力毎日クリアのご協力をよろしくお願いします。（巫女組 週5以上、2nd SheathとSG巫女神社 週2以上が最低ライン）</li>
+                    </ul>
+                </li>
+                <li>ゲーム内マナーとして、暴言、荒らし行為等の風紀を乱す行動を禁止します。狩場等の人と接触する場所ではモラルある行動をよろしくお願い致します。</li>
+                <li>メンバー勧誘の際は、ステータス、向上心、人柄、狩り方の綺麗さ等を勘案して採用しますので、管理窓口へご相談ください。</li>
+                <li>脱退は自由ですが、管理窓口へご連絡下さいませ。(非推奨)</li>
+                <li>引退された方は寂しいですがギルドロールは外させて頂きます。(非推奨)</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>ギルド加入条件</h2>
+            <ul class="main-list">
+                <li>⭐︎ 当ギルドをメインとして活動出来る方</li>
+                <li>⭐︎ アクティブな方(イン率高い方)</li>
+                <li>⭐︎ ベースSRオシャレSRフル強化以上（2nd SheathとSG巫女神社はベース20レベル3部位以上とおしゃれに45レベル2部位以上で今後強化意欲のある方）</li>
+                <li>⭐︎ 限界突破1部位以上で今後も限界突破して行く意欲のある方（2nd SheathとSG巫女神社は同上）</li>
+                <li>⭐︎ 元素騎士を楽しみ、応援している方</li>
+                <li>⭐︎ 向上心、思いやり、マナーモラルがあり、綺麗な狩り方を意識出来る方</li>
+                <li>⭐︎ 長期目線で頑張っている方</li>
+                <li>⭐︎ ギルドコンテンツに積極的に参加いただける方(もちろんリアル重視)</li>
+                <li>⭐︎ 加入金として100万mRONDをお賽銭いただける方（2nd Sheath, SG巫女神社は20万mROND）</li>
+                <li>⭐︎ 毎月月末までにギルドへ30万mROND〜をお賽銭出来る方（2nd Sheath, SG巫女神社は10万mROND）
+                    <ul class="sub-list">
+                        <li>お賽銭は状況や目的により変動あり</li>
+                        <li>ミニロンド累計額のランキングを考慮して今後色々と計画予定</li>
+                    </ul>
+                </li>
+                <li>⭐︎ ギルドクエストのノルマを達成できる方（巫女組 週4以上、2nd Sheath, SG巫女神社 週2以上クリア目標）</li>
+            </ul>
+            
+            <h3 class="mt-8">キック対象 (不本意)</h3>
+            <ul class="list-disc pl-5 mt-4">
+                <li>理由連絡なく10日以上ログインの無い方 (管理へ連絡お願いします)</li>
+                <li>ギルドクエストクリアのノルマ達成率が著しく低い方</li>
+                <li>お賽銭を払えない方</li>
+                <li>ギルド主催コンテンツへの参加率が著しく低い方 (リアル優先ですが、あまりにも不参加が続く場合)</li>
+                <li>引退された方</li>
+            </ul>
+        </section>
+        
+        <section>
+            <h2>ステータスランク表について</h2>
+            <h3>申請の流れ</h3>
+            <ul class="main-list">
+                <li>ギルド加入時にステータスの写真をgos写真添付テキストへ貼り付け申請お願いします。その後こちらで入力反映させます。
+                    <ul class="sub-list">
+                         <li>管理が大変なので必ず月一回のみの申請でご協力お願いします。</li>
+                    </ul>
+                </li>
+                <li>登録できるキャラクターは１人１キャラクターのみとなります。</li>
+                <li>装備スキルバフ（号砲・傘・ドンペン等）は禁止です。各種自己スキルバフはOK（バーストはNG）。</li>
+                <li>ステータスポイントの合計値によりランキング化されます。（ランキングはトップ10まで公開）</li>
+                <li>ステータスランキングやギルド寄付合計により報酬分配制度を今後作っていく予定です。（コンテンツ実装後に決定）</li>
+                <li>今後、元素騎士側でステータスのGOS等が数値化される場合はそちらを元にランキングを作成する予定です。</li>
+                <li>強化等で数値が変わる場合、毎月１回のみ自己申請で更新可能です（任意）。月末までに更新内容を貼り付けお願いします。</li>
+                <li>ステータスが下がった場合も必ず申請お願いします（例：装備売却等）。</li>
+            </ul>
+        </section>
+
+        <div class="mt-8 p-4 bg-red-900 text-white font-bold rounded-lg text-center shadow-lg">
+            <p>⭐️当ギルドのGOS関連の詳細はギルド外には持ち出さないようにお願いします※秘密厳守</p>
+        </div>
+
+    </div>
+</body>
+</html>
