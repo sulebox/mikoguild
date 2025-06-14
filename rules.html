@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ギルド規約</title>
+    <title>巫女ギルド連合会</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
@@ -30,7 +30,7 @@
             color: #44403c; /* text-stone-700 */
         }
         h2:first-of-type {
-            margin-top: 2.5rem; /* 最初のh2だけ上のスペースは通常通り */
+            margin-top: 0; /* 最初のh2だけ上のスペースはなし */
         }
         h3 {
             font-size: 1.25rem;
@@ -56,35 +56,12 @@
             margin-right: 0.5rem;
             color: #a8a29e; /* stone-400 */
         }
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #f3f4f6;
-            border-radius: 9999px;
-            transition: background-color 0.2s;
-            text-decoration: none;
-            margin-bottom: 1rem;
-        }
-        .back-button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
     </style>
 </head>
 <body>
-    <div class="p-4">
-        <!-- 戻るボタン -->
-        <a href="https://sulebox.github.io/mikoguild/contents.html" class="back-button">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-            戻る
-        </a>
-    </div>
-
     <div class="main-container">
-        <header class="text-center mb-6">
-            <h1 class="text-4xl font-bold text-stone-800">ギルド規約</h1>
+        <header class="text-center mb-6 pt-4">
+            <h1 class="text-4xl font-bold text-stone-800">巫女ギルド連合会</h1>
             <p class="text-stone-600 mt-4 max-w-2xl mx-auto">ギルド規則／方針になります。<br>定期的に更新して行きますのでご確認をよろしくお願い致します。<br>また、お手数ではございますがギルド連絡事項も過去に遡って確認をお願いします。</p>
         </header>
 
@@ -145,30 +122,6 @@
                 <li>引退された方</li>
             </ul>
         </section>
-        
-        <section>
-            <h2>ステータスランク表について</h2>
-            <h3>申請の流れ</h3>
-            <ul class="main-list">
-                <li>ギルド加入時にステータスの写真をgos写真添付テキストへ貼り付け申請お願いします。その後こちらで入力反映させます。
-                    <ul class="sub-list">
-                         <li>管理が大変なので必ず月一回のみの申請でご協力お願いします。</li>
-                    </ul>
-                </li>
-                <li>登録できるキャラクターは１人１キャラクターのみとなります。</li>
-                <li>装備スキルバフ（号砲・傘・ドンペン等）は禁止です。各種自己スキルバフはOK（バーストはNG）。</li>
-                <li>ステータスポイントの合計値によりランキング化されます。（ランキングはトップ10まで公開）</li>
-                <li>ステータスランキングやギルド寄付合計により報酬分配制度を今後作っていく予定です。（コンテンツ実装後に決定）</li>
-                <li>今後、元素騎士側でステータスのGOS等が数値化される場合はそちらを元にランキングを作成する予定です。</li>
-                <li>強化等で数値が変わる場合、毎月１回のみ自己申請で更新可能です（任意）。月末までに更新内容を貼り付けお願いします。</li>
-                <li>ステータスが下がった場合も必ず申請お願いします（例：装備売却等）。</li>
-            </ul>
-        </section>
-
-        <div class="mt-8 p-4 bg-red-900 text-white font-bold rounded-lg text-center shadow-lg">
-            <p>⭐️当ギルドのGOS関連の詳細はギルド外には持ち出さないようにお願いします※秘密厳守</p>
-        </div>
-
     </div>
 </body>
 </html>
