@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOSシミュレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #351715; /* 背景色を統一 */
+            color: #3f3f46; /* text-zinc-700 */
+        }
+        .main-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background-color: #F1EFE3; /* メインコンテンツの背景色 */
+            border-radius: 1.5rem;
+            padding: 2rem 2.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .stat-input {
+            /* mt-1を削除 */
+            @apply block w-full py-2 px-3 border border-stone-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-600 focus:border-amber-600 sm:text-sm;
+        }
+        .stat-label {
+            /* blockとmb-1を削除 */
+            @apply text-sm font-medium text-stone-600;
+        }
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f3f4f6;
+            border-radius: 9999px;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            margin-bottom: 1rem;
+        }
+        .back-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="p-4">
+        <!-- 戻るボタン -->
+        <a href="https://sulebox.github.io/mikoguild/rank.html" class="back-button">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            ランキングへ戻る
+        </a>
+    </div>
+
+    <div class="main-container">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-stone-800 mb-6">GOSシミュレーター</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-center border-t border-b border-stone-200 py-6">
+            <div class="md:col-span-1">
+                <label for="calcType" class="stat-label">職業種別:</label>
+                <select id="calcType" class="mt-1 block w-full py-2 px-3 border border-stone-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-600 focus:border-amber-600 sm:text-sm">
+                    <option value="物理">物理</option>
+                    <option value="魔法">魔法</option>
+                </select>
+            </div>
+             <div class="md:col-span-2 text-center md:text-right">
+                <span class="text-xl font-medium text-stone-700">あなたのGOSは:</span>
+                <span id="gosResult" class="text-4xl md:text-5xl font-bold text-amber-700 ml-2">0</span>
+            </div>
+        </div>
+
+        <!-- 入力欄のレイアウトを修正 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="hp" class="stat-label col-span-1 text-right pr-2">HP:</label>
+                <input type="number" id="hp" class="stat-input col-span-2" placeholder="x1">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="mp" class="stat-label col-span-1 text-right pr-2">MP:</label>
+                <input type="number" id="mp" class="stat-input col-span-2" placeholder="x1">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="attack" class="stat-label col-span-1 text-right pr-2">攻撃:</label>
+                <input type="number" id="attack" class="stat-input col-span-2" placeholder="x0.5（補正）">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="defense" class="stat-label col-span-1 text-right pr-2">防御:</label>
+                <input type="number" id="defense" class="stat-input col-span-2" placeholder="x1">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="magicAttack" class="stat-label col-span-1 text-right pr-2">魔法攻撃:</label>
+                <input type="number" id="magicAttack" class="stat-input col-span-2" placeholder="x0.2（補正）">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="castingSpeed" class="stat-label col-span-1 text-right pr-2">詠唱速度:</label>
+                <input type="number" id="castingSpeed" class="stat-input col-span-2" placeholder="魔x0.9 / 物x0.5">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="strength" class="stat-label col-span-1 text-right pr-2">腕力:</label>
+                <input type="number" id="strength" class="stat-input col-span-2" placeholder="x1">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="vitality" class="stat-label col-span-1 text-right pr-2">体力:</label>
+                <input type="number" id="vitality" class="stat-input col-span-2" placeholder="x1">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="speed" class="stat-label col-span-1 text-right pr-2">速さ:</label>
+                <input type="number" id="speed" class="stat-input col-span-2" placeholder="x1">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="intelligence" class="stat-label col-span-1 text-right pr-2">知力:</label>
+                <input type="number" id="intelligence" class="stat-input col-span-2" placeholder="x1">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="dexterity" class="stat-label col-span-1 text-right pr-2">器用:</label>
+                <input type="number" id="dexterity" class="stat-input col-span-2" placeholder="x1">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="mind" class="stat-label col-span-1 text-right pr-2">精神:</label>
+                <input type="number" id="mind" class="stat-input col-span-2" placeholder="x1">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="maxPhysicalCritMultiplier" class="stat-label col-span-1 text-right pr-2">Max物ｸﾘ倍:</label>
+                <input type="number" id="maxPhysicalCritMultiplier" class="stat-input col-span-2" placeholder="ｸﾘ率x0.33">
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-center">
+                <label for="maxMagicalCritMultiplier" class="stat-label col-span-1 text-right pr-2">Max魔ｸﾘ倍:</label>
+                <input type="number" id="maxMagicalCritMultiplier" class="stat-input col-span-2" placeholder="ｸﾘ率x0.33">
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <button id="resetButton" class="bg-white text-stone-700 font-bold py-3 px-8 rounded-full shadow-md hover:bg-stone-100 transition-transform transform hover:-translate-y-0.5 inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-7.923-8.25v4.992m0 0h-4.992m4.992 0l-3.182-3.182a8.25 8.25 0 00-11.664 0l-3.18 3.185" />
+                </svg>
+                リセット
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const calcTypeSelect = document.getElementById('calcType');
+        const gosResultSpan = document.getElementById('gosResult');
+        const resetButton = document.getElementById('resetButton');
+
+        const statInputIds = [
+            'hp', 'mp', 'attack', 'defense', 'magicAttack', 'castingSpeed',
+            'strength', 'vitality', 'speed', 'intelligence', 'dexterity', 'mind',
+            'maxPhysicalCritMultiplier', 'maxMagicalCritMultiplier'
+        ];
+
+        const statInputs = {};
+        statInputIds.forEach(id => {
+            statInputs[id] = document.getElementById(id);
+        });
+
+        // Function to calculate GOS
+        function calculateGOS() {
+            const C18 = parseFloat(statInputs.hp.value) || 0;
+            const E18 = parseFloat(statInputs.mp.value) || 0;
+            const C19 = parseFloat(statInputs.attack.value) || 0;
+            const E19 = parseFloat(statInputs.defense.value) || 0;
+            const C20 = parseFloat(statInputs.magicAttack.value) || 0;
+            const E20 = parseFloat(statInputs.castingSpeed.value) || 0;
+            const C21 = parseFloat(statInputs.strength.value) || 0;
+            const E21 = parseFloat(statInputs.vitality.value) || 0;
+            const C22 = parseFloat(statInputs.speed.value) || 0;
+            const E22 = parseFloat(statInputs.intelligence.value) || 0;
+            const C23 = parseFloat(statInputs.dexterity.value) || 0;
+            const E23 = parseFloat(statInputs.mind.value) || 0;
+            const C24 = parseFloat(statInputs.maxPhysicalCritMultiplier.value) || 0;
+            const E24 = parseFloat(statInputs.maxMagicalCritMultiplier.value) || 0;
+
+            const selectedType = calcTypeSelect.value;
+            let gos = 0;
+
+            if (selectedType === "物理") {
+                gos = C18 + E18 +
+                      (C19 * 0.5) * ((((E20 - 50) / 50 - 1) * 0.5) + 1) * ((((C24 - 30) / 2 + 30) * 0.33 + 100) / 100) +
+                      E19 +
+                      (C20 * 0.2 + E22) * (((E24 - 30) / 2 * 0.33 + 100) / 100) +
+                      C21 + E21 + C22 + C23 + E23;
+            } else if (selectedType === "魔法") {
+                gos = C18 + E18 +
+                      (C19 * 0.5) * (((C24 - 30) / 2 * 0.33 + 100) / 100) +
+                      E19 +
+                      (C20 * 0.2 + E22) * ((((E20 - 50) / 50 - 1) * 0.9) + 1) * ((((E24 - 30) / 2 + 30) * 0.33 + 100) / 100) +
+                      C21 + E21 + C22 + C23 + E23;
+            }
+
+            gosResultSpan.textContent = Math.round(gos);
+        }
+
+        // Function to reset all fields
+        function resetFields() {
+            statInputIds.forEach(id => {
+                statInputs[id].value = ''; // Clear input fields
+            });
+            calcTypeSelect.value = '物理'; // Reset select to '物理'
+            calculateGOS(); // Recalculate GOS (which will be 0)
+        }
+
+        // Event listeners
+        calcTypeSelect.addEventListener('change', calculateGOS);
+        statInputIds.forEach(id => {
+            statInputs[id].addEventListener('input', calculateGOS);
+        });
+        resetButton.addEventListener('click', resetFields);
+
+        // Initial calculation on page load
+        calculateGOS();
+    </script>
+</body>
+</html>
