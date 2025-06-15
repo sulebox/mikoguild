@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GOS自動入力シミュレーター</title>
+    <title>GOS自動入力シミュレーター (Tesseract.js版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tesseract.jsライブラリを読み込みます -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
         body {
@@ -25,31 +27,12 @@
         input[type=number] { -moz-appearance: textfield; }
         .stat-input { @apply block w-full py-2 px-3 border border-stone-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-600 focus:border-amber-600 sm:text-sm; }
         .stat-label { @apply text-sm font-medium text-stone-600; }
-        .back-button {
-            display: inline-flex; align-items: center; padding: 0.5rem 1rem;
-            background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #f3f4f6; border-radius: 9999px; transition: background-color 0.2s; text-decoration: none; margin-bottom: 1rem;
-        }
-        .back-button:hover { background-color: rgba(255, 255, 255, 0.2); }
-        .loader {
-            border: 4px solid #f3f3f3; border-top: 4px solid #ca8a04;
-            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div class="p-4">
-        <a href="https://sulebox.github.io/mikoguild/rank.html" class="back-button">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-            ランキングへ戻る
-        </a>
-    </div>
-
-    <div class="main-container">
+    <div class="main-container pt-8">
         <h1 class="text-3xl md:text-4xl font-bold text-center text-stone-800 mb-6">GOS自動入力シミュレーター</h1>
         
-        <!-- Image Upload Section -->
         <div class="mb-6 p-6 border-2 border-dashed border-stone-300 rounded-xl text-center">
              <label for="imageUpload" class="cursor-pointer inline-flex items-center bg-white text-stone-700 font-bold py-3 px-6 rounded-full shadow-md hover:bg-stone-100 transition">
                 <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
@@ -64,7 +47,7 @@
                 <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
                 数値を自動入力
             </button>
-             <div id="loader" class="hidden mt-4 mx-auto loader"></div>
+             <p id="statusMessage" class="mt-4 text-amber-700 font-medium"></p>
              <p id="errorMessage" class="hidden mt-4 text-red-600"></p>
         </div>
 
@@ -114,7 +97,7 @@
         const imagePreviewContainer = document.getElementById('imagePreviewContainer');
         const imagePreview = document.getElementById('imagePreview');
         const analyzeButton = document.getElementById('analyzeButton');
-        const loader = document.getElementById('loader');
+        const statusMessage = document.getElementById('statusMessage');
         const errorMessage = document.getElementById('errorMessage');
 
         const calcTypeSelect = document.getElementById('calcType');
@@ -129,104 +112,107 @@
 
         // --- Event Listeners ---
         imageUploadInput.addEventListener('change', handleImageSelect);
-        analyzeButton.addEventListener('click', analyzeImage);
+        analyzeButton.addEventListener('click', analyzeImageWithTesseract);
         resetButton.addEventListener('click', resetAll);
         calcTypeSelect.addEventListener('change', calculateGOS);
         statInputIds.forEach(id => statInputs[id].addEventListener('input', calculateGOS));
 
-        // --- Functions ---
         function handleImageSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = e => {
                 imagePreview.src = e.target.result;
                 imagePreviewContainer.classList.remove('hidden');
                 analyzeButton.classList.remove('hidden');
                 errorMessage.classList.add('hidden');
+                statusMessage.textContent = '';
             };
             reader.readAsDataURL(file);
         }
 
-        async function analyzeImage() {
+        async function analyzeImageWithTesseract() {
             if (!imagePreview.src) {
                 showError("先に画像を選択してください。");
                 return;
             }
             
             setLoading(true);
-
-            const base64ImageData = imagePreview.src.split(',')[1];
-            
-            const schema = {
-                type: "OBJECT",
-                properties: {
-                    hp: { type: "NUMBER", description: "HPの数値" },
-                    mp: { type: "NUMBER", description: "MPの数値" },
-                    attack: { type: "NUMBER", description: "攻撃の数値" },
-                    defense: { type: "NUMBER", description: "防御の数値" },
-                    magicAttack: { type: "NUMBER", description: "魔法攻撃の数値" },
-                    castingSpeed: { type: "NUMBER", description: "詠唱速度の数値" },
-                    strength: { type: "NUMBER", description: "腕力の数値" },
-                    vitality: { type: "NUMBER", description: "体力の数値" },
-                    speed: { type: "NUMBER", description: "速さの数値" },
-                    intelligence: { type: "NUMBER", description: "知力の数値" },
-                    dexterity: { type: "NUMBER", description: "器用の数値" },
-                    mind: { type: "NUMBER", description: "精神の数値" },
-                    maxPhysicalCritMultiplier: { type: "NUMBER", description: "物理CRI倍率の最大値(例:30~164なら164)" },
-                    maxMagicalCritMultiplier: { type: "NUMBER", description: "魔法CRI倍率の最大値(例:30~114なら114)" }
-                },
-                required: ["hp", "mp", "attack", "defense", "magicAttack", "castingSpeed", "strength", "vitality", "speed", "intelligence", "dexterity", "mind", "maxPhysicalCritMultiplier", "maxMagicalCritMultiplier"]
-            };
-
-            const payload = {
-                contents: [{
-                    role: "user",
-                    parts: [
-                        { text: "これはゲーム「元素騎士オンライン」のステータス画面のスクリーンショットです。この画像からステータス情報を抽出してください。物理CRI倍率と魔法CRI倍率については、範囲の中から最大値のみを抽出してください。指定されたJSONスキーマに従って回答してください。" },
-                        { inlineData: { mimeType: "image/jpeg", data: base64ImageData } }
-                    ]
-                }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: schema
-                }
-            };
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            updateStatus('準備中...');
 
             try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                const worker = await Tesseract.createWorker('jpn+eng', 1, {
+                    logger: m => {
+                        if(m.status === "recognizing text"){
+                            const progress = (m.progress * 100).toFixed(0);
+                            updateStatus(`画像を解析中... ${progress}%`);
+                        } else {
+                            updateStatus(`${m.status}...`);
+                        }
+                    },
                 });
-                if (!response.ok) {
-                    throw new Error(`API error! status: ${response.status}`);
-                }
-                const result = await response.json();
+
+                const { data: { text } } = await worker.recognize(imagePreview.src);
+                await worker.terminate();
                 
-                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0].text) {
-                    const stats = JSON.parse(result.candidates[0].content.parts[0].text);
-                    populateFields(stats);
-                    calculateGOS();
-                } else {
-                    throw new Error("APIから有効なデータが返されませんでした。");
-                }
+                parseAndPopulate(text);
+                calculateGOS();
+
             } catch (error) {
-                console.error('Error during AI analysis:', error);
+                console.error('Tesseract.js Error:', error);
                 showError("画像の解析に失敗しました。画像の向きや鮮明さを確認して再度お試しください。");
             } finally {
                 setLoading(false);
             }
         }
         
-        function populateFields(stats) {
-            for (const key in stats) {
-                if (statInputs[key]) {
-                    statInputs[key].value = stats[key];
+        function parseAndPopulate(text) {
+            const cleanedText = text.replace(/ /g, '').replace(/S/g, '5').replace(/O/g, '0').replace(/I/g, '1').replace(/l/g, '1');
+
+            const mappings = [
+                { key: 'hp', regex: /HP(\d+)/ },
+                { key: 'mp', regex: /MP(\d+)/ },
+                { key: 'attack', regex: /(?:攻撃|攻擊)(\d+)/ },
+                { key: 'defense', regex: /防御(\d+)/ },
+                { key: 'magicAttack', regex: /魔法攻撃(\d+)/ },
+                { key: 'castingSpeed', regex: /(?:詠唱速度|这增速度)(\d+)/ },
+                { key: 'strength', regex: /腕力(\d+)/ },
+                { key: 'vitality', regex: /体力(\d+)/ },
+                { key: 'speed', regex: /速さ(\d+)/ },
+                { key: 'intelligence', regex: /知力(\d+)/ },
+                { key: 'dexterity', regex: /(?:器用|器月|器)(\d+)/ },
+                { key: 'mind', regex: /精神(\d+)/ },
+                { key: 'maxPhysicalCritMultiplier', regex: /(?:物理CRI倍率|物理CRI倍|物理CR倍率|物理CR倍|物理CRI倍率).*\D(\d+)/ },
+                { key: 'maxMagicalCritMultiplier', regex: /(?:魔法CRI倍率|魔法CRI倍|魔法CR倍率|魔法CR倍|魔法CRl倍率|魔法CRl倍).*\D(\d+)/ }
+            ];
+            
+            mappings.forEach(({ key, regex }) => {
+                const match = cleanedText.match(regex);
+                if (match) {
+                    const valueToSet = match[match.length - 1];
+                    if (valueToSet && statInputs[key]) {
+                        statInputs[key].value = parseInt(valueToSet, 10);
+                    }
                 }
+            });
+            
+            const unfilledFields = [];
+            statInputIds.forEach(id => {
+                if (!statInputs[id].value) {
+                    const label = document.querySelector(`label[for="${id}"]`);
+                    if (label) {
+                        let fieldName = label.textContent.replace(':', '');
+                         if (id === 'maxPhysicalCritMultiplier') fieldName = 'Max物クリ倍';
+                         if (id === 'maxMagicalCritMultiplier') fieldName = 'Max魔クリ倍';
+                        unfilledFields.push(fieldName);
+                    }
+                }
+            });
+            
+            if (unfilledFields.length > 0) {
+                updateStatus(`自動入力完了！${unfilledFields.join('、')}は読み取れませんでした。手動での入力をお願いします！`, 'warning');
+            } else {
+                updateStatus('自動入力が完了しました！', 'success');
             }
         }
 
@@ -234,13 +220,11 @@
             const getVal = id => parseFloat(statInputs[id].value) || 0;
             const selectedType = calcTypeSelect.value;
             let gos = 0;
-
             const hp = getVal('hp'), mp = getVal('mp'), attack = getVal('attack'), defense = getVal('defense'),
                   magicAttack = getVal('magicAttack'), castingSpeed = getVal('castingSpeed'),
                   strength = getVal('strength'), vitality = getVal('vitality'), speed = getVal('speed'),
                   intelligence = getVal('intelligence'), dexterity = getVal('dexterity'), mind = getVal('mind'),
                   maxPhysCrit = getVal('maxPhysicalCritMultiplier'), maxMagCrit = getVal('maxMagicalCritMultiplier');
-
             if (selectedType === "物理") {
                 gos = hp + mp +
                       (attack * 0.5) * ((((castingSpeed - 50) / 50 - 1) * 0.5) + 1) * ((((maxPhysCrit - 30) / 2 + 30) * 0.33 + 100) / 100) +
@@ -264,28 +248,38 @@
             imagePreviewContainer.classList.add('hidden');
             analyzeButton.classList.add('hidden');
             errorMessage.classList.add('hidden');
-            loader.classList.add('hidden');
-            imageUploadInput.value = ''; // Reset file input
+            statusMessage.textContent = '';
+            imageUploadInput.value = '';
             calculateGOS();
         }
         
         function setLoading(isLoading) {
             if (isLoading) {
-                loader.classList.remove('hidden');
                 analyzeButton.classList.add('hidden');
-                errorMessage.classList.add('hidden');
             } else {
-                loader.classList.add('hidden');
-                analyzeButton.classList.remove('hidden');
+                 analyzeButton.classList.remove('hidden');
             }
+        }
+        
+        function updateStatus(message, type = 'info') {
+             errorMessage.classList.add('hidden');
+             statusMessage.textContent = message;
+             statusMessage.classList.remove('text-amber-700', 'text-green-600', 'text-red-600');
+             if (type === 'success') {
+                 statusMessage.classList.add('text-green-600');
+             } else if (type === 'warning') {
+                statusMessage.classList.add('text-red-600');
+             } else {
+                 statusMessage.classList.add('text-amber-700');
+             }
         }
 
         function showError(message) {
             errorMessage.textContent = message;
             errorMessage.classList.remove('hidden');
+            statusMessage.textContent = '';
         }
 
-        // Initial calculation on page load
         calculateGOS();
     </script>
 </body>
