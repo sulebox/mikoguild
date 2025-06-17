@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOSエクスポートツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tesseract.jsライブラリを読み込みます -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #351715;
+            color: #3f3f46;
+        }
+        .main-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background-color: #F1EFE3;
+            border-radius: 1.5rem;
+            /* スマートフォン用に左右のパディングを調整 */
+            padding: 2rem 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        @media (min-width: 640px) {
+            .main-container {
+                padding: 2rem 2.5rem;
+            }
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        .stat-input { @apply block w-full py-2 px-3 border border-stone-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-600 focus:border-amber-600 sm:text-sm; }
+        .stat-label { @apply text-sm font-medium text-stone-600; }
+        .copy-button { @apply w-full bg-stone-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-stone-600 transition-all text-sm; }
+    </style>
+</head>
+<body>
+    <div class="main-container pt-8">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-stone-800 mb-6">GOSエクスポートツール</h1>
+        
+        <div class="mb-6 p-4 sm:p-6 border-2 border-dashed border-stone-300 rounded-xl text-center">
+             <!-- ボタンの文字サイズとパディングを調整 -->
+             <label for="imageUpload" class="cursor-pointer inline-flex items-center bg-white text-stone-700 font-bold py-3 px-4 text-sm sm:text-base sm:px-6 rounded-full shadow-md hover:bg-stone-100 transition whitespace-nowrap">
+                 <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                 スクリーンショットを選択
+             </label>
+             <input type="file" id="imageUpload" class="hidden" accept="image/*">
+             <div id="imagePreviewContainer" class="mt-4 hidden">
+                 <p class="text-sm text-stone-500 mb-2">プレビュー:</p>
+                 <!-- プレビュー画像の幅を調整 -->
+                 <img id="imagePreview" class="max-w-full h-auto mx-auto rounded-lg shadow-md" style="max-width: 280px;">
+             </div>
+              <button id="analyzeButton" class="hidden mt-4 bg-amber-600 text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-amber-700 transition-transform transform hover:-translate-y-0.5 inline-flex items-center">
+                 <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                 数値を自動入力
+             </button>
+              <p id="statusMessage" class="mt-4 text-amber-700 font-medium"></p>
+              <p id="errorMessage" class="hidden mt-4 text-red-600"></p>
+        </div>
+
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-center border-t border-b border-stone-200 py-6">
+             <div class="md:col-span-1">
+                 <label for="calcType" class="stat-label">職業種別:</label>
+                 <select id="calcType" class="mt-1 block w-full py-2 px-3 border border-stone-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-600 focus:border-amber-600 sm:text-sm">
+                     <option value="物理">物理</option>
+                     <option value="魔法">魔法</option>
+                 </select>
+             </div>
+             <div class="md:col-span-2 text-center md:text-right">
+                 <span class="text-xl font-medium text-stone-700">あなたのGOSは:</span>
+                 <span id="gosResult" class="text-4xl md:text-5xl font-bold text-amber-700 ml-2">0</span>
+             </div>
+        </div>
+        
+        <!-- ステータス入力欄 (縦1列) -->
+        <div class="max-w-md mx-auto">
+            <!-- HPグループ -->
+            <button id="copyHpColumn" class="copy-button">HPグループをコピー</button>
+            <div class="space-y-4 mt-4">
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="hp" class="stat-label col-span-1 text-right pr-2">HP:</label><input type="number" id="hp" class="stat-input col-span-2" placeholder="x1"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="attack" class="stat-label col-span-1 text-right pr-2">攻撃:</label><input type="number" id="attack" class="stat-input col-span-2" placeholder="x0.5（補正）"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="magicAttack" class="stat-label col-span-1 text-right pr-2">魔法攻撃:</label><input type="number" id="magicAttack" class="stat-input col-span-2" placeholder="x0.2（補正）"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="strength" class="stat-label col-span-1 text-right pr-2">腕力:</label><input type="number" id="strength" class="stat-input col-span-2" placeholder="x1"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="speed" class="stat-label col-span-1 text-right pr-2">速さ:</label><input type="number" id="speed" class="stat-input col-span-2" placeholder="x1"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="dexterity" class="stat-label col-span-1 text-right pr-2">器用:</label><input type="number" id="dexterity" class="stat-input col-span-2" placeholder="x1"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="maxPhysicalCritMultiplier" class="stat-label col-span-1 text-right pr-2">Max物ｸﾘ倍:</label><input type="number" id="maxPhysicalCritMultiplier" class="stat-input col-span-2" placeholder="ｸﾘ率x0.33"></div>
+            </div>
+
+            <!-- MPグループ -->
+            <button id="copyMpColumn" class="copy-button mt-8">MPグループをコピー</button>
+            <div class="space-y-4 mt-4">
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="mp" class="stat-label col-span-1 text-right pr-2">MP:</label><input type="number" id="mp" class="stat-input col-span-2" placeholder="x1"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="defense" class="stat-label col-span-1 text-right pr-2">防御:</label><input type="number" id="defense" class="stat-input col-span-2" placeholder="x1"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="castingSpeed" class="stat-label col-span-1 text-right pr-2">詠唱速度:</label><input type="number" id="castingSpeed" class="stat-input col-span-2" placeholder="魔x0.9 / 物x0.5"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="vitality" class="stat-label col-span-1 text-right pr-2">体力:</label><input type="number" id="vitality" class="stat-input col-span-2" placeholder="x1"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="intelligence" class="stat-label col-span-1 text-right pr-2">知力:</label><input type="number" id="intelligence" class="stat-input col-span-2" placeholder="x1"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="mind" class="stat-label col-span-1 text-right pr-2">精神:</label><input type="number" id="mind" class="stat-input col-span-2" placeholder="x1"></div>
+                <div class="grid grid-cols-3 gap-2 items-center"><label for="maxMagicalCritMultiplier" class="stat-label col-span-1 text-right pr-2">Max魔ｸﾘ倍:</label><input type="number"id="maxMagicalCritMultiplier" class="stat-input col-span-2" placeholder="ｸﾘ率x0.33"></div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <button id="resetButton" class="bg-white text-stone-700 font-bold py-3 px-8 rounded-full shadow-md hover:bg-stone-100 transition-transform transform hover:-translate-y-0.5 inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.18-3.185m-7.923-8.25v4.992m0 0h-4.992m4.992 0l-3.182-3.182a8.25 8.25 0 00-11.664 0l-3.18 3.185" /></svg>
+                リセット
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const imageUploadInput = document.getElementById('imageUpload');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const statusMessage = document.getElementById('statusMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        const calcTypeSelect = document.getElementById('calcType');
+        const gosResultSpan = document.getElementById('gosResult');
+        const resetButton = document.getElementById('resetButton');
+        
+        // --- 新機能: コピーボタン ---
+        const copyHpButton = document.getElementById('copyHpColumn');
+        const copyMpButton = document.getElementById('copyMpColumn');
+
+        const statInputIds = [
+            'hp', 'mp', 'attack', 'defense', 'magicAttack', 'castingSpeed',
+            'strength', 'vitality', 'speed', 'intelligence', 'dexterity', 'mind',
+            'maxPhysicalCritMultiplier', 'maxMagicalCritMultiplier'
+        ];
+        
+        // --- コピー対象のIDリスト (更新) ---
+        const hpColumnIds = [ 'hp', 'attack', 'magicAttack', 'strength', 'speed', 'dexterity', 'maxPhysicalCritMultiplier' ];
+        const mpColumnIds = [ 'mp', 'defense', 'castingSpeed', 'vitality', 'intelligence', 'mind', 'maxMagicalCritMultiplier' ];
+
+        const statInputs = statInputIds.reduce((acc, id) => ({ ...acc, [id]: document.getElementById(id) }), {});
+
+        // --- Event Listeners ---
+        imageUploadInput.addEventListener('change', handleImageSelect);
+        analyzeButton.addEventListener('click', analyzeImageWithTesseract);
+        resetButton.addEventListener('click', resetAll);
+        calcTypeSelect.addEventListener('change', calculateGOS);
+        statInputIds.forEach(id => statInputs[id].addEventListener('input', calculateGOS));
+        
+        // --- 新機能: コピーボタンのイベントリスナー ---
+        copyHpButton.addEventListener('click', () => copyStatsToClipboard(hpColumnIds, copyHpButton, 'HPグループをコピー'));
+        copyMpButton.addEventListener('click', () => copyStatsToClipboard(mpColumnIds, copyMpButton, 'MPグループをコピー'));
+
+
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                imagePreview.src = e.target.result;
+                imagePreviewContainer.classList.remove('hidden');
+                analyzeButton.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+                statusMessage.textContent = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function analyzeImageWithTesseract() {
+            if (!imagePreview.src) {
+                showError("先に画像を選択してください。");
+                return;
+            }
+            
+            setLoading(true);
+            updateStatus('準備中...');
+
+            try {
+                const worker = await Tesseract.createWorker('jpn+eng', 1, {
+                    logger: m => {
+                        if(m.status === "recognizing text"){
+                            const progress = (m.progress * 100).toFixed(0);
+                            updateStatus(`画像を解析中... ${progress}%`);
+                        } else {
+                            updateStatus(`${m.status}...`);
+                        }
+                    },
+                });
+
+                const { data: { text } } = await worker.recognize(imagePreview.src);
+                await worker.terminate();
+                
+                parseAndPopulate(text);
+                calculateGOS();
+
+            } catch (error) {
+                console.error('Tesseract.js Error:', error);
+                showError("画像の解析に失敗しました。画像の向きや鮮明さを確認して再度お試しください。");
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        function parseAndPopulate(text) {
+             const cleanedText = text.replace(/ /g, '').replace(/S/g, '5').replace(/O/g, '0').replace(/I/g, '1').replace(/l/g, '1');
+
+             const mappings = [
+                 { key: 'hp', regex: /HP(\d+)/ },
+                 { key: 'mp', regex: /MP(\d+)/ },
+                 { key: 'attack', regex: /(?:攻撃|攻擊)(\d+)/ },
+                 { key: 'defense', regex: /防御(\d+)/ },
+                 { key: 'magicAttack', regex: /魔法攻撃(\d+)/ },
+                 { key: 'castingSpeed', regex: /(?:詠唱速度|这增速度)(\d+)/ },
+                 { key: 'strength', regex: /腕力(\d+)/ },
+                 { key: 'vitality', regex: /体力(\d+)/ },
+                 { key: 'speed', regex: /速さ(\d+)/ },
+                 { key: 'intelligence', regex: /知力(\d+)/ },
+                 { key: 'dexterity', regex: /(?:器用|器月|器)(\d+)/ },
+                 { key: 'mind', regex: /精神(\d+)/ },
+                 { key: 'maxPhysicalCritMultiplier', regex: /(?:物理CRI倍率|物理CRI倍|物理CR倍率|物理CR倍|物理CRI倍率).*\D(\d+)/ },
+                 { key: 'maxMagicalCritMultiplier', regex: /(?:魔法CRI倍率|魔法CRI倍|魔法CR倍率|魔法CR倍|魔法CRl倍率|魔法CRl倍).*\D(\d+)/ }
+             ];
+            
+             mappings.forEach(({ key, regex }) => {
+                 const match = cleanedText.match(regex);
+                 if (match) {
+                     const valueToSet = match[match.length - 1];
+                     if (valueToSet && statInputs[key]) {
+                         statInputs[key].value = parseInt(valueToSet, 10);
+                     }
+                 }
+             });
+            
+             const unfilledFields = [];
+             statInputIds.forEach(id => {
+                 if (!statInputs[id].value) {
+                     const label = document.querySelector(`label[for="${id}"]`);
+                     if (label) {
+                         let fieldName = label.textContent.replace(':', '');
+                          if (id === 'maxPhysicalCritMultiplier') fieldName = 'Max物クリ倍';
+                          if (id === 'maxMagicalCritMultiplier') fieldName = 'Max魔クリ倍';
+                         unfilledFields.push(fieldName);
+                     }
+                 }
+             });
+            
+             if (unfilledFields.length > 0) {
+                 updateStatus(`自動入力完了！${unfilledFields.join('、')}は読み取れませんでした。手動での入力をお願いします！`, 'warning');
+             } else {
+                 updateStatus('自動入力が完了しました！', 'success');
+             }
+        }
+
+        function calculateGOS() {
+            const getVal = id => parseFloat(statInputs[id].value) || 0;
+            const selectedType = calcTypeSelect.value;
+            let gos = 0;
+            const hp = getVal('hp'), mp = getVal('mp'), attack = getVal('attack'), defense = getVal('defense'),
+                  magicAttack = getVal('magicAttack'), castingSpeed = getVal('castingSpeed'),
+                  strength = getVal('strength'), vitality = getVal('vitality'), speed = getVal('speed'),
+                  intelligence = getVal('intelligence'), dexterity = getVal('dexterity'), mind = getVal('mind'),
+                  maxPhysCrit = getVal('maxPhysicalCritMultiplier'), maxMagCrit = getVal('maxMagicalCritMultiplier');
+            if (selectedType === "物理") {
+                gos = hp + mp +
+                      (attack * 0.5) * ((((castingSpeed - 50) / 50 - 1) * 0.5) + 1) * ((((maxPhysCrit - 30) / 2 + 30) * 0.33 + 100) / 100) +
+                      defense +
+                      (magicAttack * 0.2 + intelligence) * (((maxMagCrit - 30) / 2 * 0.33 + 100) / 100) +
+                      strength + vitality + speed + dexterity + mind;
+            } else { // 魔法
+                gos = hp + mp +
+                      (attack * 0.5) * (((maxPhysCrit - 30) / 2 * 0.33 + 100) / 100) +
+                      defense +
+                      (magicAttack * 0.2 + intelligence) * ((((castingSpeed - 50) / 50 - 1) * 0.9) + 1) * ((((maxMagCrit - 30) / 2 + 30) * 0.33 + 100) / 100) +
+                      strength + vitality + speed + dexterity + mind;
+            }
+            gosResultSpan.textContent = Math.round(gos);
+        }
+        
+        /**
+         * 指定されたIDの入力値を取得し、クリップボードにコピーする関数
+         * @param {string[]} idsToCopy - コピーするinput要素のIDの配列
+         * @param {HTMLElement} buttonElement - クリックされたボタン要素
+         * @param {string} originalButtonText - ボタンの元のテキスト
+         */
+        function copyStatsToClipboard(idsToCopy, buttonElement, originalButtonText) {
+            const values = idsToCopy.map(id => {
+                const input = document.getElementById(id);
+                return input ? input.value : '';
+            });
+            
+            const textToCopy = values.join('\n');
+            
+            // execCommandは非推奨ですが、iframe環境でのクリップボードAPIの制限を回避するため使用します
+            const textArea = document.createElement('textarea');
+            textArea.value = textToCopy;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                // ユーザーにフィードバック
+                buttonElement.textContent = 'コピーしました！';
+                buttonElement.classList.add('bg-green-600', 'hover:bg-green-700');
+                buttonElement.classList.remove('bg-stone-500', 'hover:bg-stone-600');
+            } catch (err) {
+                console.error('コピーに失敗しました', err);
+                buttonElement.textContent = 'コピー失敗';
+                buttonElement.classList.add('bg-red-600', 'hover:bg-red-700');
+                buttonElement.classList.remove('bg-stone-500', 'hover:bg-stone-600');
+            }
+            document.body.removeChild(textArea);
+
+            // 2秒後にボタンの表示を元に戻す
+            setTimeout(() => {
+                buttonElement.textContent = originalButtonText;
+                buttonElement.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-red-600', 'hover:bg-red-700');
+                buttonElement.classList.add('bg-stone-500', 'hover:bg-stone-600');
+            }, 2000);
+        }
+
+        function resetAll() {
+            statInputIds.forEach(id => statInputs[id].value = '');
+            calcTypeSelect.value = '物理';
+            imagePreview.src = '';
+            imagePreviewContainer.classList.add('hidden');
+            analyzeButton.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            statusMessage.textContent = '';
+            imageUploadInput.value = '';
+            calculateGOS();
+        }
+        
+        function setLoading(isLoading) {
+            if (isLoading) {
+                analyzeButton.classList.add('hidden');
+            } else {
+                 analyzeButton.classList.remove('hidden');
+            }
+        }
+        
+        function updateStatus(message, type = 'info') {
+             errorMessage.classList.add('hidden');
+             statusMessage.textContent = message;
+             statusMessage.classList.remove('text-amber-700', 'text-green-600', 'text-red-600');
+             if (type === 'success') {
+                  statusMessage.classList.add('text-green-600');
+             } else if (type === 'warning') {
+                 statusMessage.classList.add('text-red-600');
+             } else {
+                  statusMessage.classList.add('text-amber-700');
+             }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            statusMessage.textContent = '';
+        }
+
+        calculateGOS();
+    </script>
+</body>
+</html>
