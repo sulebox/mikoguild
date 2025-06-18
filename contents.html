@@ -24,10 +24,8 @@
             max-width: 600px;
             margin: 0 auto;
         }
+        /* アクションボタンの共通スタイル */
         .action-button {
-            /* ダークテーマ用にボタンのスタイルを調整 */
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #f3f4f6; /* text-gray-100 */
             border-radius: 9999px; /* pill shape */
             padding: 10px 20px;
@@ -41,9 +39,30 @@
             height: 50px; /* ボタンの高さを固定 */
         }
         .action-button:hover {
-            background-color: rgba(255, 255, 255, 0.2);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+        }
+        /* ボタンの色ごとのスタイル */
+        .btn-green {
+            background-color: rgba(74, 169, 108, 0.15);
+            border: 1px solid rgba(74, 169, 108, 0.25);
+        }
+        .btn-green:hover {
+             background-color: rgba(74, 169, 108, 0.25);
+        }
+        .btn-red {
+            background-color: rgba(199, 88, 88, 0.15);
+            border: 1px solid rgba(199, 88, 88, 0.25);
+        }
+        .btn-red:hover {
+            background-color: rgba(199, 88, 88, 0.25);
+        }
+        .btn-blue {
+            background-color: rgba(88, 147, 199, 0.15);
+            border: 1px solid rgba(88, 147, 199, 0.25);
+        }
+        .btn-blue:hover {
+            background-color: rgba(88, 147, 199, 0.25);
         }
         .dropdown-menu {
             /* プルダウンメニューもダークテーマに */
@@ -52,7 +71,7 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
         .edit-button {
-             background-color: #22c55e; /* green-500 */
+             background-color: #4b6863; /* 落ち着いた緑 */
              color: white;
              padding: 4px 12px;
              border-radius: 9999px;
@@ -63,7 +82,7 @@
              transition: background-color 0.2s;
         }
         .edit-button:hover {
-            background-color: #16a34a; /* green-600 */
+            background-color: #5a7d78; /* 少し明るく */
         }
     </style>
 </head>
@@ -110,7 +129,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                     <!-- お賽銭 (プルダウン) -->
                     <div class="relative">
-                        <button id="saisenButton" class="action-button w-full">
+                        <button id="saisenButton" class="action-button btn-green w-full">
                             <!-- アイコン: Torii Gate -->
                             <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5M6.75 4.5v15m10.5-15v15M3 21h18M4.5 9h15" />
@@ -125,7 +144,7 @@
                     </div>
                     
                     <!-- 防衛戦 -->
-                    <a href="https://docs.google.com/spreadsheets/d/1M9p_N-bBvN3SiFn7TZog0nhRdJYBtOfUmkp8hlPkjNo/edit?usp=drive_link" target="_blank" class="action-button">
+                    <a href="https://docs.google.com/spreadsheets/d/1M9p_N-bBvN3SiFn7TZog0nhRdJYBtOfUmkp8hlPkjNo/edit?usp=drive_link" target="_blank" class="action-button btn-green">
                         <!-- アイコン: Shield -->
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5.09.954.954 0 002.5 6.333V10a.954.954 0 00.5.833l7 4.667a.954.954 0 001 0l7-4.667A.954.954 0 0017.5 10V6.333a.954.954 0 00.334-1.243A11.954 11.954 0 0110 1.944zM8.5 9.444a.5.5 0 00-.5.5v2a.5.5 0 00.5.5h3a.5.5 0 00.5-.5v-2a.5.5 0 00-.5-.5h-3z" clip-rule="evenodd" />
@@ -134,7 +153,7 @@
                     </a>
 
                     <!-- STランキング -->
-                    <a href="https://sulebox.github.io/mikoguild/rank.html" target="_blank" class="action-button">
+                    <a href="https://sulebox.github.io/mikoguild/rank.html" target="_blank" class="action-button btn-red">
                         <!-- アイコン: Bar Chart -->
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
@@ -144,7 +163,7 @@
                     
                     <!-- メディア (プルダウン) -->
                     <div class="relative">
-                        <button id="mediaButton" class="action-button w-full">
+                        <button id="mediaButton" class="action-button btn-blue w-full">
                             <!-- アイコン: Rectangle Stack -->
                             <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                <path fill-rule="evenodd" d="M2.5 4A1.5 1.5 0 001 5.5v8A1.5 1.5 0 002.5 15h15a1.5 1.5 0 001.5-1.5v-8A1.5 1.5 0 0017.5 4h-15zM2 5.5a.5.5 0 01.5-.5h15a.5.5 0 01.5.5v8a.5.5 0 01-.5-.5h-15a.5.5 0 01-.5-.5v-8z" clip-rule="evenodd" />
@@ -159,7 +178,7 @@
                     </div>
 
                     <!-- Q&A -->
-                    <a href="https://docs.google.com/spreadsheets/d/1U1zKtbeUaosVPKMPcyyKPCdx9ibLU0kM5sGtVgxdtbY/edit?usp=sharing" target="_blank" class="action-button">
+                    <a href="https://docs.google.com/spreadsheets/d/1U1zKtbeUaosVPKMPcyyKPCdx9ibLU0kM5sGtVgxdtbY/edit?usp=sharing" target="_blank" class="action-button btn-green">
                         <!-- アイコン: Question Mark Circle -->
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
