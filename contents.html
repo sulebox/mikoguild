@@ -38,6 +38,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            height: 50px; /* ボタンの高さを固定 */
         }
         .action-button:hover {
             background-color: rgba(255, 255, 255, 0.2);
@@ -83,8 +84,8 @@
 
             <!-- アクションボタンセクション -->
             <section class="text-center mt-10">
-                <!-- 3列グリッドレイアウト -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 3列グリッドレイアウト、アイテムを中央揃えに -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                     <!-- お賽銭 (プルダウン) -->
                     <div class="relative">
                         <button id="saisenButton" class="action-button w-full">
@@ -133,6 +134,16 @@
                             <a href="https://sulebox.github.io/mikoguild/news.html" target="_blank" class="block px-4 py-3 text-sm text-gray-200 hover:bg-gray-600 rounded-t-xl">巫女新聞</a>
                             <a href="https://sulebox.github.io/mikoguild/movie.html" target="_blank" class="block px-4 py-3 text-sm text-gray-200 hover:bg-gray-600 rounded-b-xl">巫女動画</a>
                         </div>
+                    </div>
+
+                    <!-- GIF 1 -->
+                    <div class="flex justify-center">
+                        <img src="https://sulebox.github.io/todoapp/puyon.gif" alt="ぷよんGIF" class="h-16 object-contain">
+                    </div>
+
+                    <!-- GIF 2 -->
+                    <div class="flex justify-center">
+                        <img src="https://sulebox.github.io/todoapp/shef.gif" alt="シェフGIF" class="h-16 object-contain">
                     </div>
                 </div>
             </section>
