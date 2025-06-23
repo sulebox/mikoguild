@@ -47,7 +47,7 @@
         <!-- Total Cost Container -->
         <div id="total-cost-container" class="sticky top-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-200 w-full max-w-[12rem] z-20">
             <h3 class="text-xl font-bold mb-4 text-gray-900">必要素材合計</h3>
-            <div id="total-cost-list" class="space-y-2 text-gray-700"></div>
+            <div id="total-cost-list" class="text-gray-700"></div>
             <button id="reset-button" class="mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
                 リセット
             </button>
@@ -275,17 +275,30 @@
 
             const totalCostList = document.getElementById('total-cost-list');
             totalCostList.innerHTML = '';
+            totalCostList.className = 'space-y-1'; // Use flexbox for each item
+
             if (Object.keys(totals).length === 0) {
-                totalCostList.innerHTML = '<p class="text-gray-500">スキルを選択してください</p>';
+                totalCostList.className = 'text-gray-700';
+                totalCostList.innerHTML = '<p class="text-sm text-gray-500">スキルを選択してください</p>';
                 return;
             }
 
             const sortedMaterials = Object.keys(totals).sort();
             sortedMaterials.forEach(name => {
-                const item = document.createElement('span');
-                item.className = "pr-6";
-                item.textContent = `${name}: ${totals[name].toLocaleString()}`;
-                totalCostList.appendChild(item);
+                const itemContainer = document.createElement('div');
+                itemContainer.className = "flex justify-between items-center text-sm";
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'text-gray-700 whitespace-nowrap';
+                nameSpan.textContent = name;
+
+                const quantitySpan = document.createElement('span');
+                quantitySpan.className = 'font-semibold text-gray-900 ml-2';
+                quantitySpan.textContent = totals[name].toLocaleString();
+
+                itemContainer.appendChild(nameSpan);
+                itemContainer.appendChild(quantitySpan);
+                totalCostList.appendChild(itemContainer);
             });
         }
 
