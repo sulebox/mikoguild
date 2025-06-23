@@ -14,15 +14,15 @@
             background-color: #fdf8f0;
         }
         .skill-card {
-            width: 22rem; /* 固定幅 */
+            width: 15.4rem; /* 22remの70%に調整 */
             flex-shrink: 0; /* 縮まないようにする */
             transition: opacity 0.3s;
             z-index: 10;
         }
         .custom-checkbox {
             appearance: none; -webkit-appearance: none;
-            background-color: #fff; border: 2px solid #d1d5db; border-radius: 8px;
-            width: 24px; height: 24px;
+            background-color: #fff; border: 2px solid #d1d5db; border-radius: 6px; /* 少し角を丸く */
+            width: 20px; height: 20px; /* サイズを小さく */
             display: inline-block; position: relative;
             vertical-align: middle; cursor: pointer;
             transition: background-color 0.2s, border-color 0.2s;
@@ -45,9 +45,12 @@
 
     <div class="flex flex-row items-start space-x-8">
         <!-- Total Cost Container -->
-        <div id="total-cost-container" class="sticky top-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-200 w-full max-w-xs z-20">
+        <div id="total-cost-container" class="sticky top-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-gray-200 w-full max-w-[12rem] z-20">
             <h3 class="text-xl font-bold mb-4 text-gray-900">必要素材合計</h3>
             <div id="total-cost-list" class="space-y-2 text-gray-700"></div>
+            <button id="reset-button" class="mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                リセット
+            </button>
         </div>
 
         <!-- Skill Tree Wrapper for scrolling -->
@@ -56,28 +59,28 @@
                 <div class="flex justify-center items-start space-x-8">
                         <!-- Left Branch -->
                         <div class="flex flex-col items-center space-y-8">
-                            <div id="skill-card-musou" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-str2" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-pcr2" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
+                            <div id="skill-card-musou" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-str2" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-pcr2" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
                         </div>
 
                         <!-- Center Branch -->
                         <div id="center-branch" class="flex flex-col items-center space-y-8">
-                            <div id="skill-card-pp2" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-as3" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-hp2" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-str1" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-int1" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-mpow1" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-mp3" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-int2" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-abyss" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
+                            <div id="skill-card-pp2" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-as3" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-hp2" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-str1" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-int1" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-mpow1" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-mp3" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-int2" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-abyss" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
                         </div>
 
                         <!-- Magic Right Branch -->
                         <div id="magic-right-branch" class="flex flex-col items-center space-y-8">
-                            <div id="skill-card-hp3" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
-                            <div id="skill-card-mpow2" class="skill-card bg-white rounded-2xl shadow-md p-5"></div>
+                            <div id="skill-card-hp3" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
+                            <div id="skill-card-mpow2" class="skill-card bg-white rounded-2xl shadow-md p-4"></div>
                         </div>
                 </div>
                 <!-- SVG Container for Connectors -->
@@ -126,22 +129,22 @@
             const skillInfo = allSkillData[skillId];
             card.innerHTML = `
                 <div class="skill-card-content">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center space-x-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
                             <input type="checkbox" id="skillCheckbox-${skillId}" class="custom-checkbox">
-                            <label for="skillCheckbox-${skillId}" class="text-xl font-bold text-gray-900">${skillInfo.name}</label>
+                            <label for="skillCheckbox-${skillId}" class="text-base font-bold text-gray-900">${skillInfo.name}</label>
                         </div>
                         <div class="relative">
-                            <select id="levelSelector-${skillId}" class="w-28 appearance-none bg-gray-100 border border-gray-300 text-gray-800 text-base rounded-lg py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" disabled>
+                            <select id="levelSelector-${skillId}" class="w-24 appearance-none bg-gray-100 border border-gray-300 text-gray-800 text-base rounded-lg py-1 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-400 transition" disabled>
                                 ${Object.keys(skillInfo.levels).map(lv => `<option value="${lv}">Lv ${lv}</option>`).join('')}
                             </select>
                             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-600"><svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg></div>
                         </div>
                     </div>
-                    <p id="skillDescription-${skillId}" class="text-base text-gray-600 mb-4 ml-9"></p>
-                    <div id="detailsArea-${skillId}" class="pl-9 space-y-3 hidden">
-                        <div class="flex items-center"><h3 class="text-sm font-semibold text-gray-500 w-20">ランク</h3><p id="skillRank-${skillId}" class="text-base text-gray-800 font-medium"></p></div>
-                        <div class="flex items-start"><h3 class="text-sm font-semibold text-gray-500 w-20 pt-1">必要素材</h3><div id="skillMaterials-${skillId}" class="flex-1"></div></div>
+                    <p id="skillDescription-${skillId}" class="text-sm text-gray-600 mb-3 ml-8"></p>
+                    <div id="detailsArea-${skillId}" class="pl-8 space-y-2 hidden">
+                        <div class="flex items-center"><h3 class="text-sm font-semibold text-gray-500 w-16">ランク</h3><p id="skillRank-${skillId}" class="text-base text-gray-800 font-medium"></p></div>
+                        <div class="flex items-start"><h3 class="text-sm font-semibold text-gray-500 w-16 pt-1">必要素材</h3><div id="skillMaterials-${skillId}" class="flex-1"></div></div>
                     </div>
                 </div>
             `;
@@ -208,7 +211,7 @@
             if(data.materials) {
                 data.materials.forEach(material => {
                     const item = document.createElement('p');
-                    item.className = 'text-base text-gray-800 font-medium';
+                    item.className = 'text-sm text-gray-800 font-medium';
                     item.textContent = material;
                     materialsEl.appendChild(item);
                 });
@@ -364,13 +367,26 @@
         }
         
         // --- Initialization ---
-        // Sets up the entire skill tree application when the page loads.
         skillOrder.forEach(id => setupSkillCard(id));
-        checkAllDependencies();
+        checkAllDependencies(); // Initial check
+
+        const resetButton = document.getElementById('reset-button');
+        resetButton.addEventListener('click', () => {
+            skillOrder.forEach(skillId => {
+                const checkbox = document.getElementById(`skillCheckbox-${skillId}`);
+                if (checkbox.checked) {
+                    checkbox.checked = false;
+                    // Dispatch change event to trigger all the necessary UI updates
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
         setTimeout(() => { // Delay to ensure layout is stable
             alignBranches();
             drawConnectors();
         }, 100);
+        
         window.addEventListener('resize', () => {
             alignBranches();
             drawConnectors();
