@@ -52,14 +52,39 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
+        .back-button {
+            background-color: rgba(0,0,0,0.05);
+            color: #4b5563; /* gray-600 */
+            font-weight: 700;
+            padding: 12px 18px;
+            border-radius: 9999px; /* pill shape */
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+        }
+        .back-button:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
     <div class="main-container">
-        <header class="flex justify-between items-center mb-6">
+        <header class="relative flex justify-center items-center mb-6">
+            <!-- 戻るボタン (左寄せ) -->
+            <div class="absolute left-0">
+                 <a href="contents.html" class="back-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    戻る
+                </a>
+            </div>
+
+            <!-- タイトル (中央) -->
             <h1 class="text-4xl font-bold text-stone-800">STランキング</h1>
-            <!-- ボタンエリア -->
-            <div>
+            
+            <!-- GOSシミュレーターボタン (右寄せ) -->
+            <div class="absolute right-0 hidden sm:block">
                 <a href="https://sulebox.github.io/mikoguild/gosauto.html" target="_blank" class="simulator-button">
                      <!-- アイコン: Sparkles -->
                     <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
