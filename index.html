@@ -117,9 +117,19 @@
             
             if (passwordInput.value === correctPassword) {
                 // パスワードが正しい場合
-                errorMessage.textContent = '認証成功！';
                 sessionStorage.setItem('mikoGuildAuthenticated', 'true');
-                window.location.href = 'contents.html';
+                
+                // URLパラメータからリダイレクト先を取得
+                const params = new URLSearchParams(window.location.search);
+                const redirectUrl = params.get('redirect');
+                
+                // リダイレクト先があればそこへ、なければデフォルトのcontents.htmlへ移動
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                } else {
+                    window.location.href = 'contents.html';
+                }
+
             } else {
                 // パスワードが間違っている場合
                 errorMessage.textContent = '合言葉が違います。';

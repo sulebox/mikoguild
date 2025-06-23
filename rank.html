@@ -6,10 +6,13 @@
     <title>STランキング</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // ページの読み込み時、最初に認証チェックを行う
-        // sessionStorageに認証フラグがなければ、入口ページに強制的に戻す
+        // --- 認証チェック ---
+        // sessionStorageに認証フラグがなければ、入口ページにリダイレクト
         if (sessionStorage.getItem('mikoGuildAuthenticated') !== 'true') {
-            window.location.replace('https://sulebox.github.io/mikoguild/index.html');
+            // 現在のページのURLをパラメータとして渡す
+            const currentPath = window.location.pathname.split('/').pop();
+            const baseUrl = window.location.href.replace(currentPath, '');
+            window.location.replace(`${baseUrl}index.html?redirect=${currentPath}`);
         }
     </script>
     <style>
