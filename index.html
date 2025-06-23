@@ -90,7 +90,19 @@
         const volumeButton = document.getElementById('volumeButton');
         const volumeOnIcon = document.getElementById('volumeOn');
         const volumeOffIcon = document.getElementById('volumeOff');
+        
+        // ★★★ 新しい修正 ★★★
+        // ページが読み込まれた時点で行き先URLを取得して保持しておく変数
+        let destinationUrl = 'contents.html'; // デフォルトはcontents.html
 
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const redirectTarget = params.get('redirect');
+            if (redirectTarget) {
+                destinationUrl = redirectTarget;
+            }
+        });
+        
         // 「参拝する」ボタンをクリックしたらモーダルを表示
         enterButton.addEventListener('click', () => {
             passwordModal.classList.remove('hidden');
@@ -118,18 +130,8 @@
             if (passwordInput.value === correctPassword) {
                 // パスワードが正しい場合
                 sessionStorage.setItem('mikoGuildAuthenticated', 'true');
-                
-                // ★★★ 修正箇所 ★★★
-                // URLパラメータからリダイレクト先を取得
-                const params = new URLSearchParams(window.location.search);
-                const redirectUrl = params.get('redirect');
-                
-                // リダイレクト先があればそこへ、なければデフォルトのcontents.htmlへ移動
-                if (redirectUrl) {
-                    window.location.href = redirectUrl;
-                } else {
-                    window.location.href = 'contents.html';
-                }
+                // 保持しておいた行き先URLへ移動する
+                window.location.href = destinationUrl;
 
             } else {
                 // パスワードが間違っている場合
