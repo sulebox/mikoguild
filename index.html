@@ -119,6 +119,7 @@
                 // パスワードが正しい場合
                 sessionStorage.setItem('mikoGuildAuthenticated', 'true');
                 
+                // ★★★ 修正箇所 ★★★
                 // URLパラメータからリダイレクト先を取得
                 const params = new URLSearchParams(window.location.search);
                 const redirectUrl = params.get('redirect');
