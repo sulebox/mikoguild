@@ -86,9 +86,19 @@
              background-color: #F8F8F8;
              font-size: 1.25rem;
         }
-        #initial-list { grid-template-columns: repeat(2, 1fr); min-height: 400px; max-height: 50vh; overflow-y: auto; }
-        #dps { grid-template-columns: repeat(2, 1fr); min-height: 120px; }
-        #support, #healer, #absent { grid-template-columns: 1fr; min-height: 120px; }
+        #initial-list, #dps, #support, #healer { 
+            grid-template-columns: repeat(2, 1fr); 
+            min-height: 120px; 
+        }
+        #initial-list {
+            min-height: 400px; 
+            max-height: 50vh; 
+            overflow-y: auto;
+        }
+        #absent { 
+            grid-template-columns: 1fr; 
+            min-height: 120px; 
+        }
         .party-member-item.dragging { opacity: 0.4; }
         .party-member-item.drag-over-swap { transform: scale(1.05); background-color: #e0f2fe; }
     </style>
@@ -97,7 +107,8 @@
 
     <div class="container mx-auto p-4 max-w-7xl">
         <header class="card-container mb-6">
-            <h1 class="text-2xl md:text-3xl font-bold text-center mb-4">防衛戦PT編成ツール</h1>
+            <h1 class="text-2xl md:text-3xl font-bold text-center mb-2">防衛戦PT編成ツール</h1>
+            <p class="text-center text-red-600 font-semibold mb-4">毎週水曜日の20時までにメンバーリストからのキャラ移動を済ませてください</p>
             <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6">
                 <div class="flex flex-col sm:flex-row items-center gap-4 p-3 bg-gray-50 rounded-xl">
                     <label for="battle-date" class="font-bold text-2xl whitespace-nowrap">決戦日時:</label>
@@ -120,33 +131,42 @@
             </div>
         </header>
 
+        <div class="card-container mb-6">
+            <h3 class="text-xl font-bold text-center mb-3">使い方</h3>
+            <div class="flex flex-col md:flex-row gap-4 justify-center text-center">
+                <div class="flex-1 bg-gray-50 p-3 rounded-lg">
+                    <h4 class="font-bold mb-1">PCの場合</h4>
+                    <p class="text-sm">キャラクターをドラッグ＆ドロップで移動できます。</p>
+                </div>
+                <div class="flex-1 bg-gray-50 p-3 rounded-lg">
+                    <h4 class="font-bold mb-1">スマホの場合</h4>
+                    <p class="text-sm">①移動したいコマをタップ → ②移動先の枠をタップ</p>
+                </div>
+            </div>
+        </div>
+
         <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div id="initial-list-container" class="card-container lg:col-span-1">
                 <h2 class="text-xl font-bold mb-3 text-center border-b pb-2">メンバーリスト</h2>
                 <div id="initial-list" class="drop-zone bg-gray-50 border-gray-300"></div>
             </div>
 
-            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="card-container md:col-span-2">
-                        <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-dps);">火力</h3>
-                        <div id="dps" class="drop-zone" style="border-color: var(--accent-dps); background-color: #FAF6F3;"></div>
-                    </div>
-                    <div class="card-container">
-                        <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-support);">シフ/アサ</h3>
-                        <div id="support" class="drop-zone" style="border-color: var(--accent-support); background-color: #F3F5F7;"></div>
-                    </div>
-                    <div class="card-container">
-                        <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-healer);">回復</h3>
-                        <div id="healer" class="drop-zone" style="border-color: var(--accent-healer); background-color: #F5F7F3;"></div>
-                    </div>
+            <div class="lg:col-span-2 flex flex-col gap-6">
+                 <div class="card-container">
+                    <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-dps);">火力</h3>
+                    <div id="dps" class="drop-zone" style="border-color: var(--accent-dps); background-color: #FAF6F3;"></div>
                 </div>
-
-                <div class="md:col-span-1 flex flex-col">
-                    <div class="card-container h-full flex flex-col">
-                        <h3 class="text-lg font-bold mb-3 text-center text-gray-500">不参加</h3>
-                        <div id="absent" class="drop-zone border-gray-400 bg-gray-100 flex-grow" style="min-height: auto;"></div>
-                    </div>
+                <div class="card-container">
+                    <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-support);">シフ/アサ</h3>
+                    <div id="support" class="drop-zone" style="border-color: var(--accent-support); background-color: #F3F5F7;"></div>
+                </div>
+                <div class="card-container">
+                    <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-healer);">回復</h3>
+                    <div id="healer" class="drop-zone" style="border-color: var(--accent-healer); background-color: #F5F7F3;"></div>
+                </div>
+                <div class="card-container">
+                    <h3 class="text-lg font-bold mb-3 text-center text-gray-500">不参加</h3>
+                    <div id="absent" class="drop-zone border-gray-400 bg-gray-100"></div>
                 </div>
             </div>
         </main>
