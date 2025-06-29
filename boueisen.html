@@ -104,7 +104,7 @@
                         <button id="organize-button" class="btn btn-primary">PT編成</button>
                         <button id="reset-button" class="btn btn-secondary">リセット</button>
                     </div>
-                    <p class="text-xs text-gray-500">※PT編成ボタンはJさんが押してください</p>
+                    <p class="text-xs text-gray-500">※PT編成ボタンはギルドマスター(Jさん)が押してください</p>
                 </div>
             </div>
         </header>
@@ -149,31 +149,28 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Setup ---
-       const firebaseConfig = {
-        apiKey: "AIzaSyAYM0wXCS3lGiSZnkVWseeGHY3BsQWqesk",
-        authDomain: "boueisenpj.firebaseapp.com",
-        projectId: "boueisenpj",
-        storageBucket: "boueisenpj.firebasestorage.app",
-        messagingSenderId: "381288462520",
-        appId: "1:381288462520:web:76d13ac4d06d9927795c4d"
+        const firebaseConfig = {
+            apiKey: "AIzaSyAYM0wXCS3lGiSZnkVWseeGHY3BsQWqesk",
+            authDomain: "boueisenpj.firebaseapp.com",
+            projectId: "boueisenpj",
+            storageBucket: "boueisenpj.appspot.com", // Corrected format for web apps
+            messagingSenderId: "381288462520",
+            appId: "1:381288462520:web:76d13ac4d06d9927795c4d"
         };
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-party-organizer';
         
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         
-        // FIX: Corrected the document path to have an even number of segments.
-        const stateDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'states', 'party-state');
+        const stateDocRef = doc(db, 'artifacts', 'party-planner-v1', 'public', 'data', 'states', 'party-state');
         
         // --- App State ---
         let draggedItem = null;
-        let localUpdate = false; // Flag to prevent echo from onSnapshot
+        let localUpdate = false;
         const initialCharacters = [
             'jjj', 'ユニコーン', 'あむまん', 'ダン', 'vivi', 'ともどら', 'エマルン', 'にゃんころ大先生', 
             'おとう', 'xbee', 'クゥル', '一夜漬', '秘密のRさん', 'てりり', 'シュール', 'トゥナ', 
@@ -192,83 +189,83 @@
 
         // --- Main Initialization ---
         document.addEventListener('DOMContentLoaded', async () => {
-            if (typeof __initial_auth_token !== 'undefined') {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
+            await signInAnonymously(auth);
             
-            initializeUI();
-            setupRealtimeListener();
+            createCharacterTokens(); // Create tokens first
+            setupEventListeners(); // Then setup listeners
+            setupRealtimeListener(); // Finally, listen to DB and place tokens
         });
 
-        function initializeUI() {
-            createCharacterTokens();
-            initializeTimeSelect();
-            addDragListenersToTokens();
-            setupEventListeners();
-        }
-
         function createCharacterTokens() {
-            // Clear all drop zones initially
-            dropZones.forEach(zone => zone.innerHTML = '');
-            // Create character elements but don't place them yet
             initialCharacters.forEach((name) => {
+                // Avoid creating duplicates if they already exist from a previous session
+                if (document.getElementById(`char-${name.replace(/\s/g, '-')}`)) return;
+
                 const charEl = document.createElement('div');
                 charEl.id = `char-${name.replace(/\s/g, '-')}`;
                 charEl.textContent = name;
                 charEl.className = 'draggable character-token';
                 charEl.draggable = true;
-                // Temporarily hide them until placed by Firestore data
-                charEl.style.display = 'none'; 
-                document.body.appendChild(charEl); // Add to body to be available for placement
+                
+                charEl.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    e.target.style.opacity = '0.5';
+                });
+                charEl.addEventListener('dragend', (e) => {
+                    e.target.style.opacity = '1';
+                    draggedItem = null;
+                });
+
+                // Add to a temporary container, not directly to UI
+                document.body.appendChild(charEl);
+                charEl.style.display = 'none'; // Keep hidden until placed
             });
         }
         
         async function setupRealtimeListener() {
-            const docSnap = await getDoc(stateDocRef);
-            if (!docSnap.exists()) {
-                await resetStateInFirestore(); // Initialize state if it doesn't exist
-            }
-            
-            onSnapshot(stateDocRef, (doc) => {
+            onSnapshot(stateDocRef, async (doc) => {
                 if (localUpdate) {
                     localUpdate = false;
                     return;
                 }
-                const serverState = doc.data();
-                if (serverState && serverState.characters) {
+                
+                if (!doc.exists() || !doc.data().characters) {
+                    console.log("Document not found or is empty. Resetting state in Firestore.");
+                    await resetStateInFirestore();
+                } else {
+                    const serverState = doc.data();
                     updateUIFromState(serverState.characters);
                 }
             });
         }
 
         function updateUIFromState(characterPositions) {
+            // Detach all characters first to handle removals/moves correctly
+            dropZones.forEach(zone => zone.innerHTML = '');
+
             Object.entries(characterPositions).forEach(([charName, zoneId]) => {
                 const charEl = document.getElementById(`char-${charName.replace(/\s/g, '-')}`);
                 const zoneEl = document.getElementById(zoneId);
-                if (charEl && zoneEl && charEl.parentElement !== zoneEl) {
+                
+                if (charEl && zoneEl) {
+                    charEl.style.display = 'grid';
                     zoneEl.appendChild(charEl);
                 }
-                if (charEl) charEl.style.display = 'grid'; // Make visible after placement
             });
         }
-
+        
         async function resetStateInFirestore() {
-            const initialState = {};
+            const initialState = { characters: {} };
             initialCharacters.forEach(name => {
-                initialState[name] = 'initial-list';
+                initialState.characters[name] = 'initial-list';
             });
-            await setDoc(stateDocRef, { characters: initialState });
+            localUpdate = true; // Prevent this write from being echoed back
+            await setDoc(stateDocRef, initialState);
+            updateUIFromState(initialState.characters); // Update UI immediately
         }
 
-        // --- Event Listeners Setup ---
         function setupEventListeners() {
-            resetButton.addEventListener('click', async () => {
-                partyResults.innerHTML = '';
-                errorMessage.textContent = '';
-                await resetStateInFirestore();
-            });
+            resetButton.addEventListener('click', resetStateInFirestore);
 
             dropZones.forEach(zone => {
                 zone.addEventListener('dragover', (e) => {
@@ -282,23 +279,7 @@
             });
             
             organizeButton.addEventListener('click', handleOrganize);
-        }
-        
-        function addDragListenersToTokens() {
-             initialCharacters.forEach((name) => {
-                const charEl = document.getElementById(`char-${name.replace(/\s/g, '-')}`);
-                if(charEl){
-                    charEl.addEventListener('dragstart', (e) => {
-                        draggedItem = e.target;
-                        e.target.style.opacity = '0.5';
-                    });
-
-                    charEl.addEventListener('dragend', (e) => {
-                        e.target.style.opacity = '1';
-                        draggedItem = null;
-                    });
-                }
-            });
+            initializeTimeSelect();
         }
 
         async function handleDrop(e) {
@@ -308,10 +289,8 @@
                 const charName = draggedItem.textContent;
                 const newZoneId = this.id;
                 
-                // Optimistic UI update
                 this.appendChild(draggedItem);
                 
-                // Update Firestore
                 const updatePayload = { [`characters.${charName}`]: newZoneId };
                 localUpdate = true;
                 await setDoc(stateDocRef, updatePayload, { merge: true });
@@ -319,7 +298,6 @@
         }
 
         function handleOrganize() {
-            // Logic is the same, but it reads from the current DOM state
             partyResults.innerHTML = '';
             errorMessage.textContent = '';
 
@@ -330,7 +308,7 @@
             
             const participants = [...healers, ...dps, ...supports];
             if (participants.length === 0) {
-                errorMessage.textContent = '参加メンバーがいません。キャラクターを役割の箱に移動してください。';
+                errorMessage.textContent = '参加メンバーがいません。';
                 return;
             }
 
@@ -338,7 +316,7 @@
             const numParties = Math.ceil(totalPlayers / 4);
 
             if (healers.length < numParties) {
-                errorMessage.textContent = `パーティ数（${numParties}）に対して回復役が（${healers.length}人）足りません。`;
+                errorMessage.textContent = `パーティ数(${numParties})に対し回復役(${healers.length}人)が足りません。`;
                 return;
             }
             
@@ -410,7 +388,7 @@
                     listItem.draggable = true;
                     listItem.dataset.role = member.role;
                     memberList.appendChild(listItem);
-                });
+});
                 partyCard.appendChild(memberList);
                 partyResults.appendChild(partyCard);
             });
