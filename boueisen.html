@@ -50,6 +50,17 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .character-token:hover { background-color: #f7fafc; }
+        /* Styles for Tap-to-Move */
+        .character-token.selected {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+            background-color: #dbeafe;
+        }
+        .drop-zone.target-active {
+            background-color: #e0f2fe;
+            border-color: #38bdf8;
+        }
+
         .card-container {
             background-color: var(--bg-card);
             border-radius: 0.75rem;
@@ -104,7 +115,7 @@
                         <button id="organize-button" class="btn btn-primary">PT編成</button>
                         <button id="reset-button" class="btn btn-secondary">リセット</button>
                     </div>
-                    <p class="text-xs text-gray-500">※PT編成ボタンはギルドマスター(Jさん)が押してください</p>
+                    <p class="text-xs text-gray-500">※PT編成ボタンはJさんが押すのでみんなは押さないでくださいね</p>
                 </div>
             </div>
         </header>
@@ -152,12 +163,11 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Setup ---
         const firebaseConfig = {
             apiKey: "AIzaSyAYM0wXCS3lGiSZnkVWseeGHY3BsQWqesk",
             authDomain: "boueisenpj.firebaseapp.com",
             projectId: "boueisenpj",
-            storageBucket: "boueisenpj.appspot.com", // Corrected format for web apps
+            storageBucket: "boueisenpj.appspot.com",
             messagingSenderId: "381288462520",
             appId: "1:381288462520:web:76d13ac4d06d9927795c4d"
         };
@@ -168,8 +178,8 @@
         
         const stateDocRef = doc(db, 'artifacts', 'party-planner-v1', 'public', 'data', 'states', 'party-state');
         
-        // --- App State ---
         let draggedItem = null;
+        let selectedItem = null; // For tap-to-move
         let localUpdate = false;
         const initialCharacters = [
             'jjj', 'ユニコーン', 'あむまん', 'ダン', 'vivi', 'ともどら', 'エマルン', 'にゃんころ大先生', 
@@ -179,7 +189,6 @@
             'さくちゃん', 'フィール', 'ice', 'RaishiN', 'ニートン', 'ブリンドル', 'キキ', 'クリサム', 'あんこ'
         ];
 
-        // --- DOM Elements ---
         const organizeButton = document.getElementById('organize-button');
         const resetButton = document.getElementById('reset-button');
         const partyResults = document.getElementById('party-results');
@@ -187,18 +196,15 @@
         const dropZones = document.querySelectorAll('.drop-zone');
         const battleTimeSelect = document.getElementById('battle-time');
 
-        // --- Main Initialization ---
         document.addEventListener('DOMContentLoaded', async () => {
             await signInAnonymously(auth);
-            
-            createCharacterTokens(); // Create tokens first
-            setupEventListeners(); // Then setup listeners
-            setupRealtimeListener(); // Finally, listen to DB and place tokens
+            createCharacterTokens();
+            setupEventListeners();
+            setupRealtimeListener();
         });
 
         function createCharacterTokens() {
             initialCharacters.forEach((name) => {
-                // Avoid creating duplicates if they already exist from a previous session
                 if (document.getElementById(`char-${name.replace(/\s/g, '-')}`)) return;
 
                 const charEl = document.createElement('div');
@@ -207,18 +213,12 @@
                 charEl.className = 'draggable character-token';
                 charEl.draggable = true;
                 
-                charEl.addEventListener('dragstart', (e) => {
-                    draggedItem = e.target;
-                    e.target.style.opacity = '0.5';
-                });
-                charEl.addEventListener('dragend', (e) => {
-                    e.target.style.opacity = '1';
-                    draggedItem = null;
-                });
+                charEl.addEventListener('dragstart', handleDragStart);
+                charEl.addEventListener('dragend', handleDragEnd);
+                charEl.addEventListener('click', handleTokenClick);
 
-                // Add to a temporary container, not directly to UI
                 document.body.appendChild(charEl);
-                charEl.style.display = 'none'; // Keep hidden until placed
+                charEl.style.display = 'none';
             });
         }
         
@@ -230,7 +230,6 @@
                 }
                 
                 if (!doc.exists() || !doc.data().characters) {
-                    console.log("Document not found or is empty. Resetting state in Firestore.");
                     await resetStateInFirestore();
                 } else {
                     const serverState = doc.data();
@@ -240,13 +239,10 @@
         }
 
         function updateUIFromState(characterPositions) {
-            // Detach all characters first to handle removals/moves correctly
             dropZones.forEach(zone => zone.innerHTML = '');
-
             Object.entries(characterPositions).forEach(([charName, zoneId]) => {
                 const charEl = document.getElementById(`char-${charName.replace(/\s/g, '-')}`);
                 const zoneEl = document.getElementById(zoneId);
-                
                 if (charEl && zoneEl) {
                     charEl.style.display = 'grid';
                     zoneEl.appendChild(charEl);
@@ -259,9 +255,9 @@
             initialCharacters.forEach(name => {
                 initialState.characters[name] = 'initial-list';
             });
-            localUpdate = true; // Prevent this write from being echoed back
+            localUpdate = true;
             await setDoc(stateDocRef, initialState);
-            updateUIFromState(initialState.characters); // Update UI immediately
+            updateUIFromState(initialState.characters);
         }
 
         function setupEventListeners() {
@@ -276,31 +272,85 @@
                 });
                 zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
                 zone.addEventListener('drop', handleDrop);
+                zone.addEventListener('click', handleZoneClick); // For tap-to-move
             });
             
             organizeButton.addEventListener('click', handleOrganize);
             initializeTimeSelect();
         }
 
+        async function moveCharacterToZone(characterElement, zoneElement) {
+             const charName = characterElement.textContent;
+             const newZoneId = zoneElement.id;
+             zoneElement.appendChild(characterElement);
+             const updatePayload = { [`characters.${charName}`]: newZoneId };
+             localUpdate = true;
+             await setDoc(stateDocRef, updatePayload, { merge: true });
+        }
+        
+        // --- Drag & Drop Handlers ---
+        function handleDragStart(e) {
+            if (selectedItem) deselectAll();
+            draggedItem = e.target;
+            e.target.style.opacity = '0.5';
+        }
+
+        function handleDragEnd(e) {
+            e.target.style.opacity = '1';
+            draggedItem = null;
+        }
+
         async function handleDrop(e) {
             e.preventDefault();
             this.classList.remove('drag-over');
             if (draggedItem && draggedItem.parentElement !== this) {
-                const charName = draggedItem.textContent;
-                const newZoneId = this.id;
-                
-                this.appendChild(draggedItem);
-                
-                const updatePayload = { [`characters.${charName}`]: newZoneId };
-                localUpdate = true;
-                await setDoc(stateDocRef, updatePayload, { merge: true });
+                await moveCharacterToZone(draggedItem, this);
             }
         }
 
+        // --- Tap-to-Move Handlers ---
+        function handleTokenClick(e) {
+            const clickedItem = e.currentTarget;
+            if (selectedItem === clickedItem) {
+                deselectAll();
+            } else {
+                if (selectedItem) selectedItem.classList.remove('selected');
+                selectedItem = clickedItem;
+                selectedItem.classList.add('selected');
+                highlightTargetZones(true);
+            }
+        }
+        
+        async function handleZoneClick(e) {
+            const clickedZone = e.currentTarget;
+            if (selectedItem && selectedItem.parentElement !== clickedZone) {
+                await moveCharacterToZone(selectedItem, clickedZone);
+                deselectAll();
+            }
+        }
+
+        function deselectAll() {
+            if (selectedItem) {
+                selectedItem.classList.remove('selected');
+            }
+            selectedItem = null;
+            highlightTargetZones(false);
+        }
+
+        function highlightTargetZones(isActive) {
+            dropZones.forEach(zone => {
+                if (isActive) {
+                    zone.classList.add('target-active');
+                } else {
+                    zone.classList.remove('target-active');
+                }
+            });
+        }
+        
+        // --- Main Logic ---
         function handleOrganize() {
             partyResults.innerHTML = '';
             errorMessage.textContent = '';
-
             const getMembers = (id) => Array.from(document.getElementById(id).children).map(el => el.textContent);
             const healers = getMembers('healer');
             const dps = getMembers('dps');
@@ -388,7 +438,7 @@
                     listItem.draggable = true;
                     listItem.dataset.role = member.role;
                     memberList.appendChild(listItem);
-});
+                });
                 partyCard.appendChild(memberList);
                 partyResults.appendChild(partyCard);
             });
