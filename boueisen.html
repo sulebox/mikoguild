@@ -140,7 +140,7 @@
                 </div>
                 <div class="flex-1 bg-gray-50 p-3 rounded-lg">
                     <h4 class="font-bold mb-1">スマホの場合</h4>
-                    <p class="text-sm">①移動したいコマをタップ → ②移動先の枠をタップ</p>
+                    <p class="text-sm">①移動したいキャラをタップ → ②移動先の枠をタップ</p>
                 </div>
             </div>
         </div>
@@ -330,11 +330,24 @@
 
         // --- Tap-to-Move Handlers ---
         function handleTokenClick(e) {
+            e.stopPropagation(); // Stop event from bubbling to parent zone
             const clickedItem = e.currentTarget;
-            if (selectedItem === clickedItem) {
-                deselectAll();
+
+            if (selectedItem) {
+                // An item is already selected
+                if (selectedItem === clickedItem) {
+                    // Clicked the same item again: deselect it
+                    deselectAll();
+                } else {
+                    // Clicked a different item: move selected item to the new item's zone
+                    const targetZone = clickedItem.parentElement;
+                    if (targetZone && targetZone.classList.contains('drop-zone')) {
+                        moveCharacterToZone(selectedItem, targetZone);
+                        deselectAll();
+                    }
+                }
             } else {
-                if (selectedItem) selectedItem.classList.remove('selected');
+                // No item is selected: select this one
                 selectedItem = clickedItem;
                 selectedItem.classList.add('selected');
                 highlightTargetZones(true);
