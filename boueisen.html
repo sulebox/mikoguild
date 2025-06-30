@@ -40,6 +40,7 @@
         }
         .drop-zone.drag-over { background-color: #e0f2fe; border-color: #38bdf8; }
         .character-token {
+            position: relative;
             transition: all 0.2s;
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -101,6 +102,21 @@
         }
         .party-member-item.dragging { opacity: 0.4; }
         .party-member-item.drag-over-swap { transform: scale(1.05); background-color: #e0f2fe; }
+        
+        /* Tooltip for job display */
+        .job-tooltip {
+            position: fixed; /* Use fixed positioning to appear on top of everything */
+            background-color: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            z-index: 1000;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -136,11 +152,11 @@
             <div class="flex flex-col md:flex-row gap-4 justify-center text-center">
                 <div class="flex-1 bg-gray-50 p-3 rounded-lg">
                     <h4 class="font-bold mb-1">PCの場合</h4>
-                    <p class="text-sm">キャラクターをドラッグ＆ドロップで移動できます。</p>
+                    <p class="text-sm">キャラにカーソルを合わせると職業が表示されます。</p>
                 </div>
                 <div class="flex-1 bg-gray-50 p-3 rounded-lg">
                     <h4 class="font-bold mb-1">スマホの場合</h4>
-                    <p class="text-sm">①移動したいキャラをタップ → ②移動先の枠をタップ</p>
+                    <p class="text-sm">①移動したいキャラをタップ → ②移動先の枠をタップ<br>※職業の確認はキャラを長押し</p>
                 </div>
             </div>
         </div>
@@ -185,7 +201,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAYM0wXCS3lGiSZnkVWseeGHY3BsQWqesk",
@@ -203,7 +219,7 @@
         const stateDocRef = doc(db, 'artifacts', 'party-planner-v1', 'public', 'data', 'states', 'party-state');
         
         let draggedItem = null;
-        let selectedItem = null; // For tap-to-move
+        let selectedItem = null;
         let localUpdate = false;
         const initialCharacters = [
             'jjj', 'ユニコーン', 'あむまん', 'ダン', 'vivi', 'ともどら', 'エマルン', 'にゃんころ大先生', 
@@ -213,6 +229,24 @@
             'さくちゃん', 'フィール', 'ice', 'RaishiN', 'ニートン', 'ブリンドル', 'キキ', 'クリサム', 'あんこ'
         ];
 
+        const characterJobs = {
+            'jjj': 'ファイ', 'クゥル': 'ファイ', 'けんたろう': 'ファイ／アサ', 'あむまん': 'ファイ',
+            'ロト': 'ファイ', '舞茸': 'ファイ', '天城ちゃん': 'ファイ', 'ice': 'ファイ',
+            'クリサム': 'ファイ', 'のぞみん': 'ファイ', 'エマルン': 'ウィザ／ビショ', 'フィール': 'ウィザ',
+            'ユニコーン': 'ビショ', '紅蓮アラマ': 'ビショ', 'vivi': 'ビショ', 'トゥナ': 'ビショ',
+            'さくちゃん': 'ビショ', 'キュード': 'ビショ', 'にゃんころ大先生': 'アサ', '一夜漬': 'アサ',
+            'くまさん': 'アサ／モンク', '佐藤明': 'モンク／アサ', 'Aki': 'モンク／アサ',
+            'ブリンドル': 'モンク／ビショ', 'シュール': 'シーフ／アサ', 'RaishiN': 'スター／ビショ',
+            'ぴぴぴ': 'バスター', 'xbee': 'バスター', 'akiyan': 'バスター', 'ダン': 'セイバー',
+            'キキ': 'セイバー', 'una': 'セイバー', 'ともどら': 'ウォロ', 'てりり': 'ウォロ',
+            '織姫': 'ウォロ／ビショ', 'おとう': 'ウォロ', 'Ying': 'ウォロ／ビショ',
+            'ニートン': 'ウォロ', '秘密のRさん': 'ウォロ', 'あんこ': 'ビショ／バスター／クレ'
+        };
+
+        let tooltipEl;
+        let longPressTimer;
+        let wasLongPress = false;
+        
         const organizeButton = document.getElementById('organize-button');
         const resetButton = document.getElementById('reset-button');
         const partyResults = document.getElementById('party-results');
@@ -238,10 +272,17 @@
                 charEl.textContent = name;
                 charEl.className = 'draggable character-token';
                 charEl.draggable = true;
+                charEl.dataset.job = characterJobs[name] || '';
                 
                 charEl.addEventListener('dragstart', handleDragStart);
                 charEl.addEventListener('dragend', handleDragEnd);
                 charEl.addEventListener('click', handleTokenClick);
+                
+                charEl.addEventListener('mouseenter', handleMouseEnter);
+                charEl.addEventListener('mouseleave', handleMouseLeave);
+                charEl.addEventListener('touchstart', handleTouchStart, { passive: true });
+                charEl.addEventListener('touchend', handleTouchEnd);
+                charEl.addEventListener('touchmove', handleTouchMove);
 
                 document.body.appendChild(charEl);
                 charEl.style.display = 'none';
@@ -259,21 +300,29 @@
                     await resetStateInFirestore();
                 } else {
                     const serverState = doc.data();
-                    if(serverState.characters) {
-                        updateUIFromState(serverState.characters);
-                    }
-                    if(serverState.settings) {
-                        updateSettingsUI(serverState.settings);
-                    }
+                    if(serverState.characters) updateUIFromState(serverState.characters);
+                    if(serverState.settings) updateSettingsUI(serverState.settings);
                 }
             });
         }
 
         function updateUIFromState(characterPositions) {
+            const characterElements = {};
+            initialCharacters.forEach(name => {
+                const el = document.getElementById(`char-${name.replace(/\s/g, '-')}`);
+                if (el) {
+                    characterElements[name] = el;
+                    el.remove();
+                }
+            });
+
             dropZones.forEach(zone => zone.innerHTML = '');
-            Object.entries(characterPositions).forEach(([charName, zoneId]) => {
-                const charEl = document.getElementById(`char-${charName.replace(/\s/g, '-')}`);
+
+            initialCharacters.forEach(name => {
+                const charEl = characterElements[name];
+                const zoneId = characterPositions[name] || 'initial-list';
                 const zoneEl = document.getElementById(zoneId);
+                
                 if (charEl && zoneEl) {
                     charEl.style.display = 'grid';
                     zoneEl.appendChild(charEl);
@@ -292,16 +341,13 @@
             initialCharacters.forEach(name => {
                 characters[name] = 'initial-list';
             });
-
             const { date, time } = getDefaultDateTime();
             const settings = {
                 battleDate: date,
                 battleTime: time,
                 isReserved: false
             };
-            
             const initialState = { characters, settings };
-
             localUpdate = true;
             await setDoc(stateDocRef, initialState);
             updateUIFromState(initialState.characters);
@@ -310,25 +356,16 @@
 
         function setupEventListeners() {
             resetButton.addEventListener('click', resetStateInFirestore);
-
             dropZones.forEach(zone => {
-                zone.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    if (!zone.contains(draggedItem)) {
-                        zone.classList.add('drag-over');
-                    }
-                });
+                zone.addEventListener('dragover', (e) => { e.preventDefault(); if (!zone.contains(draggedItem)) zone.classList.add('drag-over'); });
                 zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
                 zone.addEventListener('drop', handleDrop);
                 zone.addEventListener('click', handleZoneClick);
             });
-            
             organizeButton.addEventListener('click', handleOrganize);
-            
             battleDateInput.addEventListener('change', updateSettingsInFirestore);
             battleTimeSelect.addEventListener('change', updateSettingsInFirestore);
             reservedCheckbox.addEventListener('change', updateSettingsInFirestore);
-
             initializeTimeSelect();
         }
 
@@ -339,17 +376,15 @@
                 isReserved: reservedCheckbox.checked
             };
             localUpdate = true;
-            await setDoc(stateDocRef, { settings }, { merge: true });
+            await updateDoc(stateDocRef, { settings });
         }
-
 
         async function moveCharacterToZone(characterElement, zoneElement) {
              const charName = characterElement.textContent;
              const newZoneId = zoneElement.id;
-             zoneElement.appendChild(characterElement);
              const updatePayload = { [`characters.${charName}`]: newZoneId };
              localUpdate = true;
-             await setDoc(stateDocRef, updatePayload, { merge: true });
+             await updateDoc(stateDocRef, updatePayload);
         }
         
         function handleDragStart(e) {
@@ -371,17 +406,20 @@
             }
         }
 
-        function handleTokenClick(e) {
+        async function handleTokenClick(e) {
+            if (wasLongPress) {
+                wasLongPress = false;
+                return;
+            }
             e.stopPropagation();
             const clickedItem = e.currentTarget;
-
             if (selectedItem) {
                 if (selectedItem === clickedItem) {
                     deselectAll();
                 } else {
                     const targetZone = clickedItem.parentElement;
                     if (targetZone && targetZone.classList.contains('drop-zone')) {
-                        moveCharacterToZone(selectedItem, targetZone);
+                        await moveCharacterToZone(selectedItem, targetZone);
                         deselectAll();
                     }
                 }
@@ -401,23 +439,79 @@
         }
 
         function deselectAll() {
-            if (selectedItem) {
-                selectedItem.classList.remove('selected');
-            }
+            if (selectedItem) selectedItem.classList.remove('selected');
             selectedItem = null;
             highlightTargetZones(false);
         }
 
         function highlightTargetZones(isActive) {
             dropZones.forEach(zone => {
-                if (isActive) {
-                    zone.classList.add('target-active');
-                } else {
-                    zone.classList.remove('target-active');
-                }
+                if(isActive) zone.classList.add('target-active');
+                else zone.classList.remove('target-active');
             });
         }
+
+        // --- Tooltip & Long Press Handlers ---
+        function showTooltip(target) {
+            if (!target.dataset.job) return;
+            hideTooltip();
+            tooltipEl = document.createElement('div');
+            tooltipEl.className = 'job-tooltip';
+            tooltipEl.textContent = target.dataset.job;
+            document.body.appendChild(tooltipEl);
+            
+            const targetRect = target.getBoundingClientRect();
+            const tooltipRect = tooltipEl.getBoundingClientRect();
+
+            let top = targetRect.top - tooltipRect.height - 5;
+            let left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+
+            if (top < 5) {
+                top = targetRect.bottom + 5;
+            }
+            if (left < 5) {
+                left = 5;
+            }
+            if (left + tooltipRect.width > window.innerWidth) {
+                left = window.innerWidth - tooltipRect.width - 5;
+            }
+
+            tooltipEl.style.top = `${top}px`;
+            tooltipEl.style.left = `${left}px`;
+            
+            setTimeout(() => { if(tooltipEl) tooltipEl.style.opacity = '1'; }, 10);
+        }
+
+        function hideTooltip() {
+            if (tooltipEl) {
+                tooltipEl.remove();
+                tooltipEl = null;
+            }
+        }
+
+        function handleMouseEnter(e) { showTooltip(e.currentTarget); }
+        function handleMouseLeave() { hideTooltip(); }
         
+        function handleTouchStart(e) {
+            wasLongPress = false;
+            longPressTimer = setTimeout(() => {
+                wasLongPress = true;
+                showTooltip(e.currentTarget);
+            }, 500);
+        }
+        
+        function handleTouchEnd() {
+            clearTimeout(longPressTimer);
+            if (wasLongPress) {
+                setTimeout(hideTooltip, 1000);
+            }
+        }
+
+        function handleTouchMove() {
+            clearTimeout(longPressTimer);
+        }
+
+        // --- Party Organization Logic ---
         function handleOrganize() {
             partyResults.innerHTML = '';
             errorMessage.textContent = '';
@@ -431,10 +525,8 @@
                 errorMessage.textContent = '参加メンバーがいません。';
                 return;
             }
-
             const totalPlayers = participants.length;
             const numParties = Math.ceil(totalPlayers / 4);
-
             if (healers.length < numParties) {
                 errorMessage.textContent = `パーティ数(${numParties})に対し回復役(${healers.length}人)が足りません。`;
                 return;
@@ -571,7 +663,6 @@
                     battleTimeSelect.appendChild(option);
                 }
             }
-            // Set default values, which will be overwritten by Firestore if data exists.
             const { date, time } = getDefaultDateTime();
             battleDateInput.value = date;
             battleTimeSelect.value = time;
