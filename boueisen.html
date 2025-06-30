@@ -220,7 +220,8 @@
         
         let draggedItem = null;
         let selectedItem = null;
-        let localUpdate = false;
+        let localState = {}; // More robust state tracking
+
         const initialCharacters = [
             'jjj', 'ユニコーン', 'あむまん', 'ダン', 'vivi', 'ともどら', 'エマルン', 'にゃんころ大先生', 
             'おとう', 'xbee', 'クゥル', '一夜漬', '秘密のRさん', 'てりり', 'シュール', 'トゥナ', 
@@ -266,24 +267,20 @@
         function createCharacterTokens() {
             initialCharacters.forEach((name) => {
                 if (document.getElementById(`char-${name.replace(/\s/g, '-')}`)) return;
-
                 const charEl = document.createElement('div');
                 charEl.id = `char-${name.replace(/\s/g, '-')}`;
                 charEl.textContent = name;
                 charEl.className = 'draggable character-token';
                 charEl.draggable = true;
                 charEl.dataset.job = characterJobs[name] || '';
-                
                 charEl.addEventListener('dragstart', handleDragStart);
                 charEl.addEventListener('dragend', handleDragEnd);
                 charEl.addEventListener('click', handleTokenClick);
-                
                 charEl.addEventListener('mouseenter', handleMouseEnter);
                 charEl.addEventListener('mouseleave', handleMouseLeave);
                 charEl.addEventListener('touchstart', handleTouchStart, { passive: true });
                 charEl.addEventListener('touchend', handleTouchEnd);
                 charEl.addEventListener('touchmove', handleTouchMove);
-
                 document.body.appendChild(charEl);
                 charEl.style.display = 'none';
             });
@@ -291,49 +288,47 @@
         
         async function setupRealtimeListener() {
             onSnapshot(stateDocRef, async (doc) => {
-                if (localUpdate) {
-                    localUpdate = false;
+                if (!doc.exists()) {
+                    await resetStateInFirestore();
                     return;
                 }
                 
-                if (!doc.exists()) {
-                    await resetStateInFirestore();
-                } else {
-                    const serverState = doc.data();
-                    if(serverState.characters) updateUIFromState(serverState.characters);
-                    if(serverState.settings) updateSettingsUI(serverState.settings);
+                const serverState = doc.data();
+                localState = serverState; // Update local copy of the state
+                
+                if (serverState.characters) {
+                    updateCharacterUI(serverState.characters);
+                }
+                if (serverState.settings) {
+                    updateSettingsUI(serverState.settings);
                 }
             });
         }
 
-        function updateUIFromState(characterPositions) {
-            const characterElements = {};
+        function updateCharacterUI(characterPositions) {
+            const allElements = {};
             initialCharacters.forEach(name => {
                 const el = document.getElementById(`char-${name.replace(/\s/g, '-')}`);
-                if (el) {
-                    characterElements[name] = el;
-                    el.remove();
-                }
+                if (el) allElements[name] = el;
             });
 
-            dropZones.forEach(zone => zone.innerHTML = '');
-
-            initialCharacters.forEach(name => {
-                const charEl = characterElements[name];
-                const zoneId = characterPositions[name] || 'initial-list';
-                const zoneEl = document.getElementById(zoneId);
-                
-                if (charEl && zoneEl) {
-                    charEl.style.display = 'grid';
-                    zoneEl.appendChild(charEl);
+            // Move elements only if their position differs from the server state
+            Object.entries(characterPositions).forEach(([name, zoneId]) => {
+                const el = allElements[name];
+                if (el && el.parentElement?.id !== zoneId) {
+                    const zone = document.getElementById(zoneId);
+                    if (zone) {
+                        el.style.display = 'grid';
+                        zone.appendChild(el);
+                    }
                 }
             });
         }
         
         function updateSettingsUI(settings) {
-            if (settings.battleDate) battleDateInput.value = settings.battleDate;
-            if (settings.battleTime) battleTimeSelect.value = settings.battleTime;
-            if (typeof settings.isReserved !== 'undefined') reservedCheckbox.checked = settings.isReserved;
+            if (document.activeElement !== battleDateInput) battleDateInput.value = settings.battleDate;
+            if (document.activeElement !== battleTimeSelect) battleTimeSelect.value = settings.battleTime;
+            if (document.activeElement !== reservedCheckbox) reservedCheckbox.checked = settings.isReserved;
         }
 
         async function resetStateInFirestore() {
@@ -342,16 +337,9 @@
                 characters[name] = 'initial-list';
             });
             const { date, time } = getDefaultDateTime();
-            const settings = {
-                battleDate: date,
-                battleTime: time,
-                isReserved: false
-            };
+            const settings = { battleDate: date, battleTime: time, isReserved: false };
             const initialState = { characters, settings };
-            localUpdate = true;
             await setDoc(stateDocRef, initialState);
-            updateUIFromState(initialState.characters);
-            updateSettingsUI(initialState.settings);
         }
 
         function setupEventListeners() {
@@ -375,16 +363,16 @@
                 battleTime: battleTimeSelect.value,
                 isReserved: reservedCheckbox.checked
             };
-            localUpdate = true;
             await updateDoc(stateDocRef, { settings });
         }
 
         async function moveCharacterToZone(characterElement, zoneElement) {
-             const charName = characterElement.textContent;
-             const newZoneId = zoneElement.id;
-             const updatePayload = { [`characters.${charName}`]: newZoneId };
-             localUpdate = true;
-             await updateDoc(stateDocRef, updatePayload);
+            const charName = characterElement.textContent;
+            const newZoneId = zoneElement.id;
+            // Optimistic UI update
+            zoneElement.appendChild(characterElement);
+            // Update Firestore
+            await updateDoc(stateDocRef, { [`characters.${charName}`]: newZoneId });
         }
         
         function handleDragStart(e) {
@@ -406,7 +394,7 @@
             }
         }
 
-        async function handleTokenClick(e) {
+        function handleTokenClick(e) {
             if (wasLongPress) {
                 wasLongPress = false;
                 return;
@@ -419,7 +407,7 @@
                 } else {
                     const targetZone = clickedItem.parentElement;
                     if (targetZone && targetZone.classList.contains('drop-zone')) {
-                        await moveCharacterToZone(selectedItem, targetZone);
+                        moveCharacterToZone(selectedItem, targetZone);
                         deselectAll();
                     }
                 }
@@ -451,7 +439,6 @@
             });
         }
 
-        // --- Tooltip & Long Press Handlers ---
         function showTooltip(target) {
             if (!target.dataset.job) return;
             hideTooltip();
@@ -459,26 +446,15 @@
             tooltipEl.className = 'job-tooltip';
             tooltipEl.textContent = target.dataset.job;
             document.body.appendChild(tooltipEl);
-            
             const targetRect = target.getBoundingClientRect();
             const tooltipRect = tooltipEl.getBoundingClientRect();
-
             let top = targetRect.top - tooltipRect.height - 5;
             let left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
-
-            if (top < 5) {
-                top = targetRect.bottom + 5;
-            }
-            if (left < 5) {
-                left = 5;
-            }
-            if (left + tooltipRect.width > window.innerWidth) {
-                left = window.innerWidth - tooltipRect.width - 5;
-            }
-
+            if (top < 5) top = targetRect.bottom + 5;
+            if (left < 5) left = 5;
+            if (left + tooltipRect.width > window.innerWidth) left = window.innerWidth - tooltipRect.width - 5;
             tooltipEl.style.top = `${top}px`;
             tooltipEl.style.left = `${left}px`;
-            
             setTimeout(() => { if(tooltipEl) tooltipEl.style.opacity = '1'; }, 10);
         }
 
@@ -502,16 +478,11 @@
         
         function handleTouchEnd() {
             clearTimeout(longPressTimer);
-            if (wasLongPress) {
-                setTimeout(hideTooltip, 1000);
-            }
+            if (wasLongPress) setTimeout(hideTooltip, 1000);
         }
 
-        function handleTouchMove() {
-            clearTimeout(longPressTimer);
-        }
+        function handleTouchMove() { clearTimeout(longPressTimer); }
 
-        // --- Party Organization Logic ---
         function handleOrganize() {
             partyResults.innerHTML = '';
             errorMessage.textContent = '';
@@ -519,17 +490,14 @@
             const healers = getMembers('healer');
             const dps = getMembers('dps');
             const supports = getMembers('support');
-            
             const participants = [...healers, ...dps, ...supports];
             if (participants.length === 0) {
-                errorMessage.textContent = '参加メンバーがいません。';
-                return;
+                errorMessage.textContent = '参加メンバーがいません。'; return;
             }
             const totalPlayers = participants.length;
             const numParties = Math.ceil(totalPlayers / 4);
             if (healers.length < numParties) {
-                errorMessage.textContent = `パーティ数(${numParties})に対し回復役(${healers.length}人)が足りません。`;
-                return;
+                errorMessage.textContent = `パーティ数(${numParties})に対し回復役(${healers.length}人)が足りません。`; return;
             }
             
             const shuffle = (array) => {
@@ -543,28 +511,23 @@
             let parties = Array.from({ length: numParties }, () => []);
             let availableHealers = shuffle([...healers]);
             let availableSupports = shuffle([...supports]);
-
             for (let i = 0; i < numParties; i++) {
                 if(availableHealers.length > 0) parties[i].push({name: availableHealers.pop(), role: 'healer'});
             }
             for (let i = 0; i < numParties; i++) {
                 if(availableSupports.length > 0) parties[i].push({ name: availableSupports.pop(), role: 'support' });
             }
-            
             let remainingPlayers = [
                 ...availableHealers.map(name => ({name, role: 'healer'})),
                 ...availableSupports.map(name => ({name, role: 'support'})),
                 ...shuffle(dps).map(name => ({name, role: 'dps'}))
             ];
             remainingPlayers = shuffle(remainingPlayers);
-
             let playerPool = [...remainingPlayers];
             while(playerPool.length > 0) {
                 for(let i = 0; i < numParties; i++) {
                     if (playerPool.length === 0) break;
-                    if (parties[i].length < 4) {
-                        parties[i].push(playerPool.shift());
-                    }
+                    if (parties[i].length < 4) parties[i].push(playerPool.shift());
                 }
             }
             displayParties(parties);
@@ -573,7 +536,6 @@
         function displayParties(parties) {
             partyResults.innerHTML = '';
             const roleOrder = { 'dps': 1, 'support': 2, 'healer': 3 };
-
             parties.forEach((party, index) => {
                 const partyCard = document.createElement('div');
                 partyCard.className = 'card-container bg-gray-50 border border-gray-200 p-3';
@@ -583,9 +545,7 @@
                 partyCard.appendChild(title);
                 const memberList = document.createElement('ul');
                 memberList.className = 'space-y-1.5';
-                
                 party.sort((a, b) => (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99));
-                
                 party.forEach(member => {
                     const listItem = document.createElement('li');
                     let roleStyle = '';
