@@ -214,7 +214,9 @@
         const partyResults = document.getElementById('party-results');
         const errorMessage = document.getElementById('error-message');
         const dropZones = document.querySelectorAll('.drop-zone');
+        const battleDateInput = document.getElementById('battle-date');
         const battleTimeSelect = document.getElementById('battle-time');
+        const reservedCheckbox = document.getElementById('reserved-checkbox');
 
         document.addEventListener('DOMContentLoaded', async () => {
             await signInAnonymously(auth);
@@ -249,11 +251,16 @@
                     return;
                 }
                 
-                if (!doc.exists() || !doc.data().characters) {
+                if (!doc.exists()) {
                     await resetStateInFirestore();
                 } else {
                     const serverState = doc.data();
-                    updateUIFromState(serverState.characters);
+                    if(serverState.characters) {
+                        updateUIFromState(serverState.characters);
+                    }
+                    if(serverState.settings) {
+                        updateSettingsUI(serverState.settings);
+                    }
                 }
             });
         }
@@ -270,14 +277,31 @@
             });
         }
         
+        function updateSettingsUI(settings) {
+            if (settings.battleDate) battleDateInput.value = settings.battleDate;
+            if (settings.battleTime) battleTimeSelect.value = settings.battleTime;
+            if (typeof settings.isReserved !== 'undefined') reservedCheckbox.checked = settings.isReserved;
+        }
+
         async function resetStateInFirestore() {
-            const initialState = { characters: {} };
+            const characters = {};
             initialCharacters.forEach(name => {
-                initialState.characters[name] = 'initial-list';
+                characters[name] = 'initial-list';
             });
+
+            const { date, time } = getDefaultDateTime();
+            const settings = {
+                battleDate: date,
+                battleTime: time,
+                isReserved: false
+            };
+            
+            const initialState = { characters, settings };
+
             localUpdate = true;
             await setDoc(stateDocRef, initialState);
             updateUIFromState(initialState.characters);
+            updateSettingsUI(initialState.settings);
         }
 
         function setupEventListeners() {
@@ -292,12 +316,29 @@
                 });
                 zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
                 zone.addEventListener('drop', handleDrop);
-                zone.addEventListener('click', handleZoneClick); // For tap-to-move
+                zone.addEventListener('click', handleZoneClick);
             });
             
             organizeButton.addEventListener('click', handleOrganize);
+            
+            // Listen for changes to settings and update Firestore
+            battleDateInput.addEventListener('change', updateSettingsInFirestore);
+            battleTimeSelect.addEventListener('change', updateSettingsInFirestore);
+            reservedCheckbox.addEventListener('change', updateSettingsInFirestore);
+
             initializeTimeSelect();
         }
+
+        async function updateSettingsInFirestore() {
+            const settings = {
+                battleDate: battleDateInput.value,
+                battleTime: battleTimeSelect.value,
+                isReserved: reservedCheckbox.checked
+            };
+            localUpdate = true;
+            await setDoc(stateDocRef, { settings }, { merge: true });
+        }
+
 
         async function moveCharacterToZone(characterElement, zoneElement) {
              const charName = characterElement.textContent;
@@ -308,7 +349,6 @@
              await setDoc(stateDocRef, updatePayload, { merge: true });
         }
         
-        // --- Drag & Drop Handlers ---
         function handleDragStart(e) {
             if (selectedItem) deselectAll();
             draggedItem = e.target;
@@ -328,18 +368,14 @@
             }
         }
 
-        // --- Tap-to-Move Handlers ---
         function handleTokenClick(e) {
-            e.stopPropagation(); // Stop event from bubbling to parent zone
+            e.stopPropagation();
             const clickedItem = e.currentTarget;
 
             if (selectedItem) {
-                // An item is already selected
                 if (selectedItem === clickedItem) {
-                    // Clicked the same item again: deselect it
                     deselectAll();
                 } else {
-                    // Clicked a different item: move selected item to the new item's zone
                     const targetZone = clickedItem.parentElement;
                     if (targetZone && targetZone.classList.contains('drop-zone')) {
                         moveCharacterToZone(selectedItem, targetZone);
@@ -347,7 +383,6 @@
                     }
                 }
             } else {
-                // No item is selected: select this one
                 selectedItem = clickedItem;
                 selectedItem.classList.add('selected');
                 highlightTargetZones(true);
@@ -380,7 +415,6 @@
             });
         }
         
-        // --- Main Logic ---
         function handleOrganize() {
             partyResults.innerHTML = '';
             errorMessage.textContent = '';
@@ -511,9 +545,19 @@
             });
         }
         
-        function initializeTimeSelect() {
+        function getDefaultDateTime() {
             const now = new Date();
-            document.getElementById('battle-date').value = now.toISOString().split('T')[0];
+            const date = now.toISOString().split('T')[0];
+            let currentHour = now.getHours();
+            let currentMinute = now.getMinutes();
+            if (currentMinute < 15) currentMinute = 0;
+            else if (currentMinute < 45) currentMinute = 30;
+            else { currentMinute = 0; currentHour = (currentHour + 1) % 24; }
+            const time = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+            return { date, time };
+        }
+
+        function initializeTimeSelect() {
             battleTimeSelect.innerHTML = '';
             for (let h = 0; h < 24; h++) {
                 for (let m = 0; m < 60; m += 30) {
@@ -524,12 +568,10 @@
                     battleTimeSelect.appendChild(option);
                 }
             }
-            let currentHour = now.getHours();
-            let currentMinute = now.getMinutes();
-            if (currentMinute < 15) currentMinute = 0;
-            else if (currentMinute < 45) currentMinute = 30;
-            else { currentMinute = 0; currentHour = (currentHour + 1) % 24; }
-            battleTimeSelect.value = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+            // Set default values, which will be overwritten by Firestore if data exists.
+            const { date, time } = getDefaultDateTime();
+            battleDateInput.value = date;
+            battleTimeSelect.value = time;
         }
     </script>
 </body>
