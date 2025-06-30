@@ -92,11 +92,11 @@
         }
         #initial-list {
             min-height: 400px; 
-            max-height: 50vh; 
+            max-height: 60vh; 
             overflow-y: auto;
         }
         #absent { 
-            grid-template-columns: 1fr; 
+            grid-template-columns: repeat(2, 1fr);
             min-height: 120px; 
         }
         .party-member-item.dragging { opacity: 0.4; }
@@ -151,22 +151,26 @@
                 <div id="initial-list" class="drop-zone bg-gray-50 border-gray-300"></div>
             </div>
 
-            <div class="lg:col-span-2 flex flex-col gap-6">
-                 <div class="card-container">
-                    <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-dps);">火力</h3>
-                    <div id="dps" class="drop-zone" style="border-color: var(--accent-dps); background-color: #FAF6F3;"></div>
+            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-2 flex flex-col gap-6">
+                    <div class="card-container">
+                        <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-dps);">火力</h3>
+                        <div id="dps" class="drop-zone" style="border-color: var(--accent-dps); background-color: #FAF6F3;"></div>
+                    </div>
+                    <div class="card-container">
+                        <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-support);">シフ/アサ</h3>
+                        <div id="support" class="drop-zone" style="border-color: var(--accent-support); background-color: #F3F5F7;"></div>
+                    </div>
+                    <div class="card-container">
+                        <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-healer);">回復</h3>
+                        <div id="healer" class="drop-zone" style="border-color: var(--accent-healer); background-color: #F5F7F3;"></div>
+                    </div>
                 </div>
-                <div class="card-container">
-                    <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-support);">シフ/アサ</h3>
-                    <div id="support" class="drop-zone" style="border-color: var(--accent-support); background-color: #F3F5F7;"></div>
-                </div>
-                <div class="card-container">
-                    <h3 class="text-lg font-bold mb-3 text-center" style="color: var(--accent-healer);">回復</h3>
-                    <div id="healer" class="drop-zone" style="border-color: var(--accent-healer); background-color: #F5F7F3;"></div>
-                </div>
-                <div class="card-container">
-                    <h3 class="text-lg font-bold mb-3 text-center text-gray-500">不参加</h3>
-                    <div id="absent" class="drop-zone border-gray-400 bg-gray-100"></div>
+                 <div class="md:col-span-1">
+                    <div class="card-container h-full flex flex-col">
+                        <h3 class="text-lg font-bold mb-3 text-center text-gray-500">不参加</h3>
+                        <div id="absent" class="drop-zone border-gray-400 bg-gray-100 flex-grow"></div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -321,7 +325,6 @@
             
             organizeButton.addEventListener('click', handleOrganize);
             
-            // Listen for changes to settings and update Firestore
             battleDateInput.addEventListener('change', updateSettingsInFirestore);
             battleTimeSelect.addEventListener('change', updateSettingsInFirestore);
             reservedCheckbox.addEventListener('change', updateSettingsInFirestore);
