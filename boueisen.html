@@ -51,7 +51,6 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .character-token:hover { background-color: #f7fafc; }
-        /* Styles for Tap-to-Move */
         .character-token.selected {
             outline: 2px solid #3b82f6;
             outline-offset: 2px;
@@ -101,11 +100,23 @@
             min-height: 120px; 
         }
         .party-member-item.dragging { opacity: 0.4; }
-        .party-member-item.drag-over-swap { transform: scale(1.05); background-color: #e0f2fe; }
+        .party-member-item.drag-over-swap, .party-slot.drag-over-swap { 
+            transform: scale(1.05); 
+            background-color: #e0f2fe; 
+        }
+        .party-member-item.selected, .party-slot.selected {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        .party-slot {
+            min-height: 34px;
+            border: 1px dashed var(--border-color);
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
         
-        /* Tooltip for job display */
         .job-tooltip {
-            position: fixed; /* Use fixed positioning to appear on top of everything */
+            position: fixed;
             background-color: #333;
             color: white;
             padding: 4px 8px;
@@ -152,11 +163,11 @@
             <div class="flex flex-col md:flex-row gap-4 justify-center text-center">
                 <div class="flex-1 bg-gray-50 p-3 rounded-lg">
                     <h4 class="font-bold mb-1">PCの場合</h4>
-                    <p class="text-sm">キャラにカーソルを合わせると職業が表示されます。</p>
+                    <p class="text-sm">キャラにカーソルで職業表示。ドラッグ＆ドロップで移動。</p>
                 </div>
                 <div class="flex-1 bg-gray-50 p-3 rounded-lg">
                     <h4 class="font-bold mb-1">スマホの場合</h4>
-                    <p class="text-sm">①移動したいキャラをタップ → ②移動先の枠をタップ<br>※職業の確認はキャラを長押し</p>
+                    <p class="text-sm">①移動したいキャラをタップ → ②移動先の枠をタップ<br>※職業確認はキャラ長押し</p>
                 </div>
             </div>
         </div>
@@ -220,7 +231,8 @@
         
         let draggedItem = null;
         let selectedItem = null;
-        let localState = {}; // More robust state tracking
+        let selectedResultItem = null;
+        let localState = {};
 
         const initialCharacters = [
             'jjj', 'ユニコーン', 'あむまん', 'ダン', 'vivi', 'ともどら', 'エマルン', 'にゃんころ大先生', 
@@ -250,7 +262,7 @@
         
         const organizeButton = document.getElementById('organize-button');
         const resetButton = document.getElementById('reset-button');
-        const partyResults = document.getElementById('party-results');
+        const partyResultsDiv = document.getElementById('party-results');
         const errorMessage = document.getElementById('error-message');
         const dropZones = document.querySelectorAll('.drop-zone');
         const battleDateInput = document.getElementById('battle-date');
@@ -292,16 +304,12 @@
                     await resetStateInFirestore();
                     return;
                 }
-                
                 const serverState = doc.data();
-                localState = serverState; // Update local copy of the state
-                
-                if (serverState.characters) {
-                    updateCharacterUI(serverState.characters);
-                }
-                if (serverState.settings) {
-                    updateSettingsUI(serverState.settings);
-                }
+                localState = serverState;
+                if (serverState.characters) updateCharacterUI(serverState.characters);
+                if (serverState.settings) updateSettingsUI(serverState.settings);
+                if (serverState.partyResults) displayParties(serverState.partyResults);
+                else partyResultsDiv.innerHTML = '';
             });
         }
 
@@ -312,7 +320,6 @@
                 if (el) allElements[name] = el;
             });
 
-            // Move elements only if their position differs from the server state
             Object.entries(characterPositions).forEach(([name, zoneId]) => {
                 const el = allElements[name];
                 if (el && el.parentElement?.id !== zoneId) {
@@ -338,7 +345,7 @@
             });
             const { date, time } = getDefaultDateTime();
             const settings = { battleDate: date, battleTime: time, isReserved: false };
-            const initialState = { characters, settings };
+            const initialState = { characters, settings, partyResults: [] };
             await setDoc(stateDocRef, initialState);
         }
 
@@ -369,9 +376,6 @@
         async function moveCharacterToZone(characterElement, zoneElement) {
             const charName = characterElement.textContent;
             const newZoneId = zoneElement.id;
-            // Optimistic UI update
-            zoneElement.appendChild(characterElement);
-            // Update Firestore
             await updateDoc(stateDocRef, { [`characters.${charName}`]: newZoneId });
         }
         
@@ -395,18 +399,14 @@
         }
 
         function handleTokenClick(e) {
-            if (wasLongPress) {
-                wasLongPress = false;
-                return;
-            }
+            if (wasLongPress) { wasLongPress = false; return; }
             e.stopPropagation();
             const clickedItem = e.currentTarget;
             if (selectedItem) {
-                if (selectedItem === clickedItem) {
-                    deselectAll();
-                } else {
+                if (selectedItem === clickedItem) deselectAll();
+                else {
                     const targetZone = clickedItem.parentElement;
-                    if (targetZone && targetZone.classList.contains('drop-zone')) {
+                    if (targetZone?.classList.contains('drop-zone')) {
                         moveCharacterToZone(selectedItem, targetZone);
                         deselectAll();
                     }
@@ -428,8 +428,11 @@
 
         function deselectAll() {
             if (selectedItem) selectedItem.classList.remove('selected');
+            if (selectedResultItem) selectedResultItem.classList.remove('selected');
             selectedItem = null;
+            selectedResultItem = null;
             highlightTargetZones(false);
+            document.querySelectorAll('.party-slot').forEach(el => el.classList.remove('target-active'));
         }
 
         function highlightTargetZones(isActive) {
@@ -458,16 +461,9 @@
             setTimeout(() => { if(tooltipEl) tooltipEl.style.opacity = '1'; }, 10);
         }
 
-        function hideTooltip() {
-            if (tooltipEl) {
-                tooltipEl.remove();
-                tooltipEl = null;
-            }
-        }
-
+        function hideTooltip() { if (tooltipEl) { tooltipEl.remove(); tooltipEl = null; } }
         function handleMouseEnter(e) { showTooltip(e.currentTarget); }
         function handleMouseLeave() { hideTooltip(); }
-        
         function handleTouchStart(e) {
             wasLongPress = false;
             longPressTimer = setTimeout(() => {
@@ -475,16 +471,10 @@
                 showTooltip(e.currentTarget);
             }, 500);
         }
-        
-        function handleTouchEnd() {
-            clearTimeout(longPressTimer);
-            if (wasLongPress) setTimeout(hideTooltip, 1000);
-        }
-
+        function handleTouchEnd() { clearTimeout(longPressTimer); if (wasLongPress) setTimeout(hideTooltip, 1000); }
         function handleTouchMove() { clearTimeout(longPressTimer); }
 
-        function handleOrganize() {
-            partyResults.innerHTML = '';
+        async function handleOrganize() {
             errorMessage.textContent = '';
             const getMembers = (id) => Array.from(document.getElementById(id).children).map(el => el.textContent);
             const healers = getMembers('healer');
@@ -530,47 +520,107 @@
                     if (parties[i].length < 4) parties[i].push(playerPool.shift());
                 }
             }
-            displayParties(parties);
+            await updateDoc(stateDocRef, { partyResults: parties });
         }
 
         function displayParties(parties) {
-            partyResults.innerHTML = '';
+            partyResultsDiv.innerHTML = '';
             const roleOrder = { 'dps': 1, 'support': 2, 'healer': 3 };
-            parties.forEach((party, index) => {
+            parties.forEach((party, partyIndex) => {
                 const partyCard = document.createElement('div');
                 partyCard.className = 'card-container bg-gray-50 border border-gray-200 p-3';
                 const title = document.createElement('h4');
                 title.className = 'font-bold text-md mb-2 text-center';
-                title.textContent = `Party ${index + 1}`;
+                title.textContent = `Party ${partyIndex + 1}`;
                 partyCard.appendChild(title);
                 const memberList = document.createElement('ul');
                 memberList.className = 'space-y-1.5';
+                
                 party.sort((a, b) => (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99));
-                party.forEach(member => {
-                    const listItem = document.createElement('li');
-                    let roleStyle = '';
-                    switch (member.role) {
-                        case 'healer': roleStyle = 'color: var(--accent-healer); font-weight: 600; border-color: var(--accent-healer);'; break;
-                        case 'dps': roleStyle = 'color: var(--accent-dps); border-color: var(--accent-dps);'; break;
-                        case 'support': roleStyle = 'color: var(--accent-support); border-color: var(--accent-support);'; break;
+                
+                for(let memberIndex = 0; memberIndex < 4; memberIndex++) {
+                    const member = party[memberIndex];
+                    if (member) {
+                        const listItem = document.createElement('li');
+                        let roleStyle = '';
+                        switch (member.role) {
+                            case 'healer': roleStyle = 'color: var(--accent-healer); font-weight: 600; border-color: var(--accent-healer);'; break;
+                            case 'dps': roleStyle = 'color: var(--accent-dps); border-color: var(--accent-dps);'; break;
+                            case 'support': roleStyle = 'color: var(--accent-support); border-color: var(--accent-support);'; break;
+                        }
+                        listItem.className = `party-member-item p-1.5 bg-white rounded-md text-center border-l-4 text-sm`;
+                        listItem.style.cssText = roleStyle;
+                        listItem.textContent = member.name;
+                        listItem.draggable = true;
+                        listItem.dataset.partyIndex = partyIndex;
+                        listItem.dataset.memberIndex = memberIndex;
+                        listItem.addEventListener('click', handleResultItemClick);
+                        memberList.appendChild(listItem);
+                    } else {
+                        const emptySlot = document.createElement('li');
+                        emptySlot.className = 'party-slot';
+                        emptySlot.dataset.partyIndex = partyIndex;
+                        emptySlot.dataset.memberIndex = memberIndex;
+                        emptySlot.addEventListener('click', handleResultItemClick);
+                        memberList.appendChild(emptySlot);
                     }
-                    listItem.className = `party-member-item p-1.5 bg-white rounded-md text-center border-l-4 text-sm`;
-                    listItem.style.cssText = roleStyle;
-                    listItem.textContent = member.name;
-                    listItem.draggable = true;
-                    listItem.dataset.role = member.role;
-                    memberList.appendChild(listItem);
-                });
+                }
                 partyCard.appendChild(memberList);
-                partyResults.appendChild(partyCard);
+                partyResultsDiv.appendChild(partyCard);
             });
             addResultSwapListeners();
         }
 
+        async function handleResultItemClick(e) {
+            const clickedItem = e.currentTarget;
+            if (selectedResultItem) {
+                const sourceParty = selectedResultItem.dataset.partyIndex;
+                const sourceMember = selectedResultItem.dataset.memberIndex;
+                const targetParty = clickedItem.dataset.partyIndex;
+                const targetMember = clickedItem.dataset.memberIndex;
+                
+                if (sourceParty !== targetParty || sourceMember !== targetMember) {
+                    await swapPartyMembers(
+                        { partyIndex: parseInt(sourceParty), memberIndex: parseInt(sourceMember) },
+                        { partyIndex: parseInt(targetParty), memberIndex: parseInt(targetMember) }
+                    );
+                }
+                deselectAll();
+            } else {
+                if (clickedItem.classList.contains('party-member-item')) {
+                    selectedResultItem = clickedItem;
+                    selectedResultItem.classList.add('selected');
+                    document.querySelectorAll('.party-slot, .party-member-item').forEach(el => el.classList.add('target-active'));
+                }
+            }
+        }
+        
+        async function swapPartyMembers(source, target) {
+            const newPartyResults = JSON.parse(JSON.stringify(localState.partyResults || []));
+            const sourceItem = newPartyResults[source.partyIndex]?.[source.memberIndex];
+            const targetItem = newPartyResults[target.partyIndex]?.[target.memberIndex];
+
+            if (source.partyIndex >= newPartyResults.length) newPartyResults[source.partyIndex] = [];
+            if (target.partyIndex >= newPartyResults.length) newPartyResults[target.partyIndex] = [];
+
+            newPartyResults[source.partyIndex][source.memberIndex] = targetItem || null;
+            newPartyResults[target.partyIndex][target.memberIndex] = sourceItem || null;
+            
+            // Clean up nulls from the end of arrays to keep data tidy
+            newPartyResults.forEach(party => {
+                while(party.length > 0 && party[party.length - 1] === null) {
+                    party.pop();
+                }
+            });
+
+            await updateDoc(stateDocRef, { partyResults: newPartyResults });
+        }
+
+
         let draggedResultItem = null;
 
         function addResultSwapListeners() {
-            const items = document.querySelectorAll('.party-member-item');
+            const items = document.querySelectorAll('.party-member-item, .party-slot');
             items.forEach(item => {
                 item.addEventListener('dragstart', (e) => {
                     draggedResultItem = e.target;
@@ -582,19 +632,14 @@
                     if (draggedResultItem !== e.target) e.target.classList.add('drag-over-swap');
                 });
                 item.addEventListener('dragleave', (e) => e.target.classList.remove('drag-over-swap'));
-                item.addEventListener('drop', (e) => {
+                item.addEventListener('drop', async (e) => {
                     e.preventDefault();
                     e.target.classList.remove('drag-over-swap');
-                    if (draggedResultItem !== e.target) {
-                        const draggedName = draggedResultItem.textContent;
-                        const draggedStyle = draggedResultItem.style.cssText;
-                        const draggedRole = draggedResultItem.dataset.role;
-                        draggedResultItem.textContent = e.target.textContent;
-                        draggedResultItem.style.cssText = e.target.style.cssText;
-                        draggedResultItem.dataset.role = e.target.dataset.role;
-                        e.target.textContent = draggedName;
-                        e.target.style.cssText = draggedStyle;
-                        e.target.dataset.role = draggedRole;
+                    if (draggedResultItem && draggedResultItem !== e.target) {
+                         await swapPartyMembers(
+                            { partyIndex: parseInt(draggedResultItem.dataset.partyIndex), memberIndex: parseInt(draggedResultItem.dataset.memberIndex) },
+                            { partyIndex: parseInt(e.currentTarget.dataset.partyIndex), memberIndex: parseInt(e.currentTarget.dataset.memberIndex) }
+                        );
                     }
                 });
             });
