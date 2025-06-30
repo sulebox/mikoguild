@@ -56,11 +56,10 @@
             outline-offset: 2px;
             background-color: #dbeafe;
         }
-        .drop-zone.target-active {
+        .drop-zone.target-active, .party-card.target-active .member-list {
             background-color: #e0f2fe;
             border-color: #38bdf8;
         }
-
         .card-container {
             background-color: var(--bg-card);
             border-radius: 0.75rem;
@@ -86,7 +85,7 @@
              background-color: #F8F8F8;
              font-size: 1.25rem;
         }
-        #initial-list, #dps, #support, #healer { 
+        #initial-list, #dps, #support, #healer, #absent { 
             grid-template-columns: repeat(2, 1fr); 
             min-height: 120px; 
         }
@@ -94,10 +93,6 @@
             min-height: 400px; 
             max-height: 60vh; 
             overflow-y: auto;
-        }
-        #absent { 
-            grid-template-columns: repeat(2, 1fr);
-            min-height: 120px; 
         }
         .party-member-item.dragging { opacity: 0.4; }
         .party-member-item.drag-over-swap, .party-slot.drag-over-swap { 
@@ -300,16 +295,17 @@
         
         async function setupRealtimeListener() {
             onSnapshot(stateDocRef, async (doc) => {
-                if (!doc.exists()) {
+                const serverState = doc.exists() ? doc.data() : null;
+                
+                if (!serverState) {
                     await resetStateInFirestore();
                     return;
                 }
-                const serverState = doc.data();
+
                 localState = serverState;
                 if (serverState.characters) updateCharacterUI(serverState.characters);
-                if (serverState.settings) updateSettingsUI(serverState.settings);
-                if (serverState.partyResults) displayParties(serverState.partyResults);
-                else partyResultsDiv.innerHTML = '';
+                updateSettingsUI(serverState.settings || {});
+                displayParties(serverState.partyResults || []);
             });
         }
 
@@ -319,7 +315,6 @@
                 const el = document.getElementById(`char-${name.replace(/\s/g, '-')}`);
                 if (el) allElements[name] = el;
             });
-
             Object.entries(characterPositions).forEach(([name, zoneId]) => {
                 const el = allElements[name];
                 if (el && el.parentElement?.id !== zoneId) {
@@ -333,9 +328,9 @@
         }
         
         function updateSettingsUI(settings) {
-            if (document.activeElement !== battleDateInput) battleDateInput.value = settings.battleDate;
-            if (document.activeElement !== battleTimeSelect) battleTimeSelect.value = settings.battleTime;
-            if (document.activeElement !== reservedCheckbox) reservedCheckbox.checked = settings.isReserved;
+            if (document.activeElement !== battleDateInput && settings.battleDate) battleDateInput.value = settings.battleDate;
+            if (document.activeElement !== battleTimeSelect && settings.battleTime) battleTimeSelect.value = settings.battleTime;
+            if (document.activeElement !== reservedCheckbox) reservedCheckbox.checked = !!settings.isReserved;
         }
 
         async function resetStateInFirestore() {
@@ -398,32 +393,21 @@
             }
         }
 
-        function handleTokenClick(e) {
+        async function handleTokenClick(e) {
             if (wasLongPress) { wasLongPress = false; return; }
             e.stopPropagation();
-            const clickedItem = e.currentTarget;
-            if (selectedItem) {
-                if (selectedItem === clickedItem) deselectAll();
-                else {
-                    const targetZone = clickedItem.parentElement;
-                    if (targetZone?.classList.contains('drop-zone')) {
-                        moveCharacterToZone(selectedItem, targetZone);
-                        deselectAll();
-                    }
-                }
-            } else {
-                selectedItem = clickedItem;
-                selectedItem.classList.add('selected');
-                highlightTargetZones(true);
-            }
+            deselectAll(); // Deselect any previous selection
+            selectedItem = e.currentTarget;
+            selectedItem.classList.add('selected');
+            highlightTargetZones(true);
         }
         
         async function handleZoneClick(e) {
             const clickedZone = e.currentTarget;
             if (selectedItem && selectedItem.parentElement !== clickedZone) {
                 await moveCharacterToZone(selectedItem, clickedZone);
-                deselectAll();
             }
+            deselectAll();
         }
 
         function deselectAll() {
@@ -432,7 +416,7 @@
             selectedItem = null;
             selectedResultItem = null;
             highlightTargetZones(false);
-            document.querySelectorAll('.party-slot').forEach(el => el.classList.remove('target-active'));
+            document.querySelectorAll('.party-slot, .party-member-item').forEach(el => el.classList.remove('target-active'));
         }
 
         function highlightTargetZones(isActive) {
@@ -450,12 +434,11 @@
             tooltipEl.textContent = target.dataset.job;
             document.body.appendChild(tooltipEl);
             const targetRect = target.getBoundingClientRect();
-            const tooltipRect = tooltipEl.getBoundingClientRect();
-            let top = targetRect.top - tooltipRect.height - 5;
-            let left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+            let top = targetRect.top - tooltipEl.offsetHeight - 5;
+            let left = targetRect.left + (targetRect.width / 2) - (tooltipEl.offsetWidth / 2);
             if (top < 5) top = targetRect.bottom + 5;
             if (left < 5) left = 5;
-            if (left + tooltipRect.width > window.innerWidth) left = window.innerWidth - tooltipRect.width - 5;
+            if (left + tooltipEl.offsetWidth > window.innerWidth) left = window.innerWidth - tooltipEl.offsetWidth - 5;
             tooltipEl.style.top = `${top}px`;
             tooltipEl.style.left = `${left}px`;
             setTimeout(() => { if(tooltipEl) tooltipEl.style.opacity = '1'; }, 10);
@@ -491,9 +474,11 @@
             }
             
             const shuffle = (array) => {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
+                let currentIndex = array.length, randomIndex;
+                while (currentIndex != 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
                 }
                 return array;
             };
@@ -540,8 +525,12 @@
                 
                 for(let memberIndex = 0; memberIndex < 4; memberIndex++) {
                     const member = party[memberIndex];
+                    const listItem = document.createElement('li');
+                    listItem.dataset.partyIndex = partyIndex;
+                    listItem.dataset.memberIndex = memberIndex;
+                    listItem.addEventListener('click', handleResultItemClick);
+
                     if (member) {
-                        const listItem = document.createElement('li');
                         let roleStyle = '';
                         switch (member.role) {
                             case 'healer': roleStyle = 'color: var(--accent-healer); font-weight: 600; border-color: var(--accent-healer);'; break;
@@ -552,18 +541,10 @@
                         listItem.style.cssText = roleStyle;
                         listItem.textContent = member.name;
                         listItem.draggable = true;
-                        listItem.dataset.partyIndex = partyIndex;
-                        listItem.dataset.memberIndex = memberIndex;
-                        listItem.addEventListener('click', handleResultItemClick);
-                        memberList.appendChild(listItem);
                     } else {
-                        const emptySlot = document.createElement('li');
-                        emptySlot.className = 'party-slot';
-                        emptySlot.dataset.partyIndex = partyIndex;
-                        emptySlot.dataset.memberIndex = memberIndex;
-                        emptySlot.addEventListener('click', handleResultItemClick);
-                        memberList.appendChild(emptySlot);
+                        listItem.className = 'party-slot';
                     }
+                    memberList.appendChild(listItem);
                 }
                 partyCard.appendChild(memberList);
                 partyResultsDiv.appendChild(partyCard);
@@ -573,21 +554,14 @@
 
         async function handleResultItemClick(e) {
             const clickedItem = e.currentTarget;
-            if (selectedResultItem) {
-                const sourceParty = selectedResultItem.dataset.partyIndex;
-                const sourceMember = selectedResultItem.dataset.memberIndex;
-                const targetParty = clickedItem.dataset.partyIndex;
-                const targetMember = clickedItem.dataset.memberIndex;
-                
-                if (sourceParty !== targetParty || sourceMember !== targetMember) {
-                    await swapPartyMembers(
-                        { partyIndex: parseInt(sourceParty), memberIndex: parseInt(sourceMember) },
-                        { partyIndex: parseInt(targetParty), memberIndex: parseInt(targetMember) }
-                    );
-                }
+            if (selectedResultItem) { // If an item is already selected
+                await swapPartyMembers(
+                    { partyIndex: parseInt(selectedResultItem.dataset.partyIndex), memberIndex: parseInt(selectedResultItem.dataset.memberIndex) },
+                    { partyIndex: parseInt(clickedItem.dataset.partyIndex), memberIndex: parseInt(clickedItem.dataset.memberIndex) }
+                );
                 deselectAll();
-            } else {
-                if (clickedItem.classList.contains('party-member-item')) {
+            } else { // If nothing is selected
+                if (clickedItem.classList.contains('party-member-item')) { // and we clicked a character
                     selectedResultItem = clickedItem;
                     selectedResultItem.classList.add('selected');
                     document.querySelectorAll('.party-slot, .party-member-item').forEach(el => el.classList.add('target-active'));
@@ -606,7 +580,6 @@
             newPartyResults[source.partyIndex][source.memberIndex] = targetItem || null;
             newPartyResults[target.partyIndex][target.memberIndex] = sourceItem || null;
             
-            // Clean up nulls from the end of arrays to keep data tidy
             newPartyResults.forEach(party => {
                 while(party.length > 0 && party[party.length - 1] === null) {
                     party.pop();
@@ -615,7 +588,6 @@
 
             await updateDoc(stateDocRef, { partyResults: newPartyResults });
         }
-
 
         let draggedResultItem = null;
 
@@ -669,8 +641,8 @@
                 }
             }
             const { date, time } = getDefaultDateTime();
-            battleDateInput.value = date;
-            battleTimeSelect.value = time;
+            if (!battleDateInput.value) battleDateInput.value = date;
+            if (!battleTimeSelect.value) battleTimeSelect.value = time;
         }
     </script>
 </body>
