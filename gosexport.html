@@ -31,18 +31,17 @@
         .stat-input { @apply block w-full py-2 px-3 border border-stone-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-600 focus:border-amber-600 sm:text-sm; }
         .stat-label { @apply text-sm font-medium text-stone-600; }
         .copy-button { @apply w-full bg-stone-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-stone-600 transition-all text-sm; }
-        
-        /* ローディングスピナー */
+        #analyzeButton.loading {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
         .loader {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #c2410c; /* amber-700 */
+            border-top: 4px solid #c7a57a;
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            width: 20px;
+            height: 20px;
             animation: spin 1s linear infinite;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 0.5rem;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -52,41 +51,41 @@
 </head>
 <body>
     <div class="main-container pt-8">
-        <h1 class="text-3xl md:text-4xl font-bold text-center text-stone-800 mb-6">GOSエクスポートツール</h1>
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-stone-800 mb-6">GOSエクスポートツール (AI Studio連携版)</h1>
         
         <div class="mb-6 p-4 sm:p-6 border-2 border-dashed border-stone-300 rounded-xl text-center">
-             <label for="imageUpload" class="cursor-pointer inline-flex items-center bg-white text-stone-700 font-bold py-3 px-4 text-sm sm:text-base sm:px-6 rounded-full shadow-md hover:bg-stone-100 transition whitespace-nowrap">
-                 <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-                 スクリーンショットを選択
-             </label>
-             <input type="file" id="imageUpload" class="hidden" accept="image/*">
-             <div id="imagePreviewContainer" class="mt-4 hidden">
-                 <p class="text-sm text-stone-500 mb-2">プレビュー:</p>
-                 <img id="imagePreview" class="max-w-full h-auto mx-auto rounded-lg shadow-md" style="max-width: 280px;">
-             </div>
-              <button id="analyzeButton" class="hidden mt-4 bg-amber-600 text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-amber-700 transition-transform transform hover:-translate-y-0.5 disabled:bg-gray-400 disabled:cursor-not-allowed inline-flex items-center">
-                 <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
-                 <span id="analyzeButtonText">AIで数値を入力</span>
-             </button>
-              <div id="statusContainer" class="mt-4 text-amber-700 font-medium h-6">
-                <div id="loader" class="hidden"><div class="loader"></div><span id="statusMessage"></span></div>
+              <label for="imageUpload" class="cursor-pointer inline-flex items-center bg-white text-stone-700 font-bold py-3 px-4 text-sm sm:text-base sm:px-6 rounded-full shadow-md hover:bg-stone-100 transition whitespace-nowrap">
+                  <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                  スクリーンショットを選択
+              </label>
+              <input type="file" id="imageUpload" class="hidden" accept="image/*">
+              <div id="imagePreviewContainer" class="mt-4 hidden">
+                  <p class="text-sm text-stone-500 mb-2">プレビュー:</p>
+                  <img id="imagePreview" class="max-w-full h-auto mx-auto rounded-lg shadow-md" style="max-width: 280px;">
               </div>
-              <p id="errorMessage" class="hidden mt-4 text-red-600"></p>
+               <button id="analyzeButton" class="hidden mt-4 bg-amber-600 text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-amber-700 transition-transform transform hover:-translate-y-0.5 inline-flex items-center justify-center">
+                  <span id="button-text">
+                     <svg class="w-5 h-5 mr-2 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                     AI Studioで自動入力
+                  </span>
+                  <div id="loader" class="loader hidden"></div>
+               </button>
+               <p id="statusMessage" class="mt-4 text-amber-700 font-medium"></p>
+               <p id="errorMessage" class="hidden mt-4 text-red-600"></p>
         </div>
 
-
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-center border-t border-b border-stone-200 py-6">
-             <div class="md:col-span-1">
-                 <label for="calcType" class="stat-label">職業種別:</label>
-                 <select id="calcType" class="mt-1 block w-full py-2 px-3 border border-stone-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-600 focus:border-amber-600 sm:text-sm">
-                     <option value="物理">物理</option>
-                     <option value="魔法">魔法</option>
-                 </select>
-             </div>
-             <div class="md:col-span-2 text-center md:text-right">
-                 <span class="text-xl font-medium text-stone-700">あなたのGOSは:</span>
-                 <span id="gosResult" class="text-4xl md:text-5xl font-bold text-amber-700 ml-2">0</span>
-             </div>
+              <div class="md:col-span-1">
+                  <label for="calcType" class="stat-label">職業種別:</label>
+                  <select id="calcType" class="mt-1 block w-full py-2 px-3 border border-stone-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-600 focus:border-amber-600 sm:text-sm">
+                      <option value="物理">物理</option>
+                      <option value="魔法">魔法</option>
+                  </select>
+              </div>
+              <div class="md:col-span-2 text-center md:text-right">
+                  <span class="text-xl font-medium text-stone-700">あなたのGOSは:</span>
+                  <span id="gosResult" class="text-4xl md:text-5xl font-bold text-amber-700 ml-2">0</span>
+              </div>
         </div>
         
         <div class="max-w-md mx-auto">
@@ -137,6 +136,7 @@
         const statusMessage = document.getElementById('statusMessage');
         const errorMessage = document.getElementById('errorMessage');
         const loader = document.getElementById('loader');
+        const buttonText = document.getElementById('button-text');
 
         const calcTypeSelect = document.getElementById('calcType');
         const gosResultSpan = document.getElementById('gosResult');
@@ -155,12 +155,12 @@
         const mpColumnIds = [ 'mp', 'defense', 'castingSpeed', 'vitality', 'intelligence', 'mind', 'maxMagicalCritMultiplier' ];
 
         const statInputs = statInputIds.reduce((acc, id) => ({ ...acc, [id]: document.getElementById(id) }), {});
-        
+
         let base64ImageData = null;
 
         // --- Event Listeners ---
         imageUploadInput.addEventListener('change', handleImageSelect);
-        analyzeButton.addEventListener('click', analyzeImageWithBackend);
+        analyzeButton.addEventListener('click', analyzeImageWithBackend); // <-- 変更点
         resetButton.addEventListener('click', resetAll);
         calcTypeSelect.addEventListener('change', calculateGOS);
         statInputIds.forEach(id => statInputs[id].addEventListener('input', calculateGOS));
@@ -168,24 +168,26 @@
         copyHpButton.addEventListener('click', () => copyStatsToClipboard(hpColumnIds, copyHpButton, 'HPグループをコピー'));
         copyMpButton.addEventListener('click', () => copyStatsToClipboard(mpColumnIds, copyMpButton, 'MPグループをコピー'));
 
-        // --- Main Functions ---
-
         function handleImageSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = e => {
-                imagePreview.src = e.target.result;
+                const dataUrl = e.target.result;
+                imagePreview.src = dataUrl;
+                base64ImageData = dataUrl.split(',')[1];
+
                 imagePreviewContainer.classList.remove('hidden');
                 analyzeButton.classList.remove('hidden');
                 errorMessage.classList.add('hidden');
                 statusMessage.textContent = '';
-                // Base64データを保持（ヘッダー部分を取り除く）
-                base64ImageData = e.target.result.split(',')[1];
             };
             reader.readAsDataURL(file);
         }
-
+        
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★★★ Gemini APIを直接呼ぶ代わりに、バックエンドサーバーを呼ぶように変更 ★★★
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
         async function analyzeImageWithBackend() {
             if (!base64ImageData) {
                 showError("先に画像を選択してください。");
@@ -196,7 +198,8 @@
                 return;
             }
             
-            setLoading(true, 'AIが解析中...');
+            setLoading(true);
+            updateStatus('AI Studioサーバーで解析中...');
 
             try {
                 const response = await fetch(BACKEND_API_URL, {
@@ -213,7 +216,6 @@
                 const data = await response.json();
                 populateForm(data);
                 calculateGOS();
-                updateStatus('自動入力が完了しました！', 'success');
 
             } catch (error) {
                 console.error('Backend Error:', error);
@@ -232,13 +234,15 @@
                      const label = document.querySelector(`label[for="${id}"]`);
                      if (label) {
                          let fieldName = label.textContent.replace(':', '');
+                         if (id === 'maxPhysicalCritMultiplier') fieldName = 'Max物クリ倍';
+                         if (id === 'maxMagicalCritMultiplier') fieldName = 'Max魔クリ倍';
                          unfilledFields.push(fieldName);
                      }
                  }
              });
 
              if (unfilledFields.length > 0) {
-                 updateStatus(`自動入力完了！一部項目(${unfilledFields.join('、')})は手動で入力をお願いします。`, 'warning');
+                 updateStatus(`自動入力完了！ ${unfilledFields.join('、')}は読み取れませんでした。`, 'warning');
              } else {
                  updateStatus('全ての項目を自動入力しました！', 'success');
              }
@@ -272,7 +276,6 @@
         function copyStatsToClipboard(idsToCopy, buttonElement, originalButtonText) {
             const values = idsToCopy.map(id => document.getElementById(id)?.value || '');
             const textToCopy = values.join('\n');
-            
             const textArea = document.createElement('textarea');
             textArea.value = textToCopy;
             document.body.appendChild(textArea);
@@ -289,7 +292,6 @@
                 buttonElement.classList.remove('bg-stone-500', 'hover:bg-stone-600');
             }
             document.body.removeChild(textArea);
-
             setTimeout(() => {
                 buttonElement.textContent = originalButtonText;
                 buttonElement.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-red-600', 'hover:bg-red-700');
@@ -305,21 +307,22 @@
             analyzeButton.classList.add('hidden');
             errorMessage.classList.add('hidden');
             statusMessage.textContent = '';
-            loader.classList.add('hidden');
             imageUploadInput.value = '';
+            base64ImageData = null;
             calculateGOS();
         }
         
-        // --- Helper Functions ---
-        
-        function setLoading(isLoading, message = '') {
-            analyzeButton.disabled = isLoading;
+        function setLoading(isLoading) {
             if (isLoading) {
+                analyzeButton.disabled = true;
+                analyzeButton.classList.add('loading');
+                buttonText.classList.add('hidden');
                 loader.classList.remove('hidden');
-                statusMessage.textContent = message;
             } else {
+                analyzeButton.disabled = false;
+                analyzeButton.classList.remove('loading');
+                buttonText.classList.remove('hidden');
                 loader.classList.add('hidden');
-                // メッセージはupdateStatusに任せる
             }
         }
         
@@ -340,7 +343,6 @@
             errorMessage.textContent = message;
             errorMessage.classList.remove('hidden');
             statusMessage.textContent = '';
-            loader.classList.add('hidden');
         }
 
         calculateGOS();
