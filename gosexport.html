@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GOSエクスポートツール</title>
+    <title>GOSエクスポートツール (AI Studio連携版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tesseract.jsライブラリを読み込みます -->
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
         body {
@@ -19,7 +17,6 @@
             margin: 2rem auto;
             background-color: #F1EFE3;
             border-radius: 1.5rem;
-            /* スマートフォン用に左右のパディングを調整 */
             padding: 2rem 1.5rem;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
@@ -34,6 +31,23 @@
         .stat-input { @apply block w-full py-2 px-3 border border-stone-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-amber-600 focus:border-amber-600 sm:text-sm; }
         .stat-label { @apply text-sm font-medium text-stone-600; }
         .copy-button { @apply w-full bg-stone-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-stone-600 transition-all text-sm; }
+        
+        /* ローディングスピナー */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #c2410c; /* amber-700 */
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -41,7 +55,6 @@
         <h1 class="text-3xl md:text-4xl font-bold text-center text-stone-800 mb-6">GOSエクスポートツール</h1>
         
         <div class="mb-6 p-4 sm:p-6 border-2 border-dashed border-stone-300 rounded-xl text-center">
-             <!-- ボタンの文字サイズとパディングを調整 -->
              <label for="imageUpload" class="cursor-pointer inline-flex items-center bg-white text-stone-700 font-bold py-3 px-4 text-sm sm:text-base sm:px-6 rounded-full shadow-md hover:bg-stone-100 transition whitespace-nowrap">
                  <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
                  スクリーンショットを選択
@@ -49,14 +62,15 @@
              <input type="file" id="imageUpload" class="hidden" accept="image/*">
              <div id="imagePreviewContainer" class="mt-4 hidden">
                  <p class="text-sm text-stone-500 mb-2">プレビュー:</p>
-                 <!-- プレビュー画像の幅を調整 -->
                  <img id="imagePreview" class="max-w-full h-auto mx-auto rounded-lg shadow-md" style="max-width: 280px;">
              </div>
-              <button id="analyzeButton" class="hidden mt-4 bg-amber-600 text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-amber-700 transition-transform transform hover:-translate-y-0.5 inline-flex items-center">
+              <button id="analyzeButton" class="hidden mt-4 bg-amber-600 text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-amber-700 transition-transform transform hover:-translate-y-0.5 disabled:bg-gray-400 disabled:cursor-not-allowed inline-flex items-center">
                  <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
-                 数値を自動入力
+                 <span id="analyzeButtonText">AIで数値を入力</span>
              </button>
-              <p id="statusMessage" class="mt-4 text-amber-700 font-medium"></p>
+              <div id="statusContainer" class="mt-4 text-amber-700 font-medium h-6">
+                <div id="loader" class="hidden"><div class="loader"></div><span id="statusMessage"></span></div>
+              </div>
               <p id="errorMessage" class="hidden mt-4 text-red-600"></p>
         </div>
 
@@ -75,9 +89,7 @@
              </div>
         </div>
         
-        <!-- ステータス入力欄 (縦1列) -->
         <div class="max-w-md mx-auto">
-            <!-- HPグループ -->
             <button id="copyHpColumn" class="copy-button">HPグループをコピー</button>
             <div class="space-y-4 mt-4">
                 <div class="grid grid-cols-3 gap-2 items-center"><label for="hp" class="stat-label col-span-1 text-right pr-2">HP:</label><input type="number" id="hp" class="stat-input col-span-2" placeholder="x1"></div>
@@ -89,7 +101,6 @@
                 <div class="grid grid-cols-3 gap-2 items-center"><label for="maxPhysicalCritMultiplier" class="stat-label col-span-1 text-right pr-2">Max物ｸﾘ倍:</label><input type="number" id="maxPhysicalCritMultiplier" class="stat-input col-span-2" placeholder="ｸﾘ率x0.33"></div>
             </div>
 
-            <!-- MPグループ -->
             <button id="copyMpColumn" class="copy-button mt-8">MPグループをコピー</button>
             <div class="space-y-4 mt-4">
                 <div class="grid grid-cols-3 gap-2 items-center"><label for="mp" class="stat-label col-span-1 text-right pr-2">MP:</label><input type="number" id="mp" class="stat-input col-span-2" placeholder="x1"></div>
@@ -111,6 +122,13 @@
     </div>
 
     <script>
+        // --- 設定項目 ---
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+        // ★★★ ここにReplitで作成したサーバーのURLを設定してください ★★★
+        // ★★★ 例: 'https://gos-api-server.your-name.replit.dev/analyze' ★★★
+        const BACKEND_API_URL = 'https://fe5c0afd-40cc-49e5-996e-cadfda300510-00-1at9t1a4q2kxo.sisko.replit.dev/analyze';
+        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
         // --- DOM Elements ---
         const imageUploadInput = document.getElementById('imageUpload');
         const imagePreviewContainer = document.getElementById('imagePreviewContainer');
@@ -118,12 +136,12 @@
         const analyzeButton = document.getElementById('analyzeButton');
         const statusMessage = document.getElementById('statusMessage');
         const errorMessage = document.getElementById('errorMessage');
+        const loader = document.getElementById('loader');
 
         const calcTypeSelect = document.getElementById('calcType');
         const gosResultSpan = document.getElementById('gosResult');
         const resetButton = document.getElementById('resetButton');
         
-        // --- 新機能: コピーボタン ---
         const copyHpButton = document.getElementById('copyHpColumn');
         const copyMpButton = document.getElementById('copyMpColumn');
 
@@ -133,23 +151,24 @@
             'maxPhysicalCritMultiplier', 'maxMagicalCritMultiplier'
         ];
         
-        // --- コピー対象のIDリスト (更新) ---
         const hpColumnIds = [ 'hp', 'attack', 'magicAttack', 'strength', 'speed', 'dexterity', 'maxPhysicalCritMultiplier' ];
         const mpColumnIds = [ 'mp', 'defense', 'castingSpeed', 'vitality', 'intelligence', 'mind', 'maxMagicalCritMultiplier' ];
 
         const statInputs = statInputIds.reduce((acc, id) => ({ ...acc, [id]: document.getElementById(id) }), {});
+        
+        let base64ImageData = null;
 
         // --- Event Listeners ---
         imageUploadInput.addEventListener('change', handleImageSelect);
-        analyzeButton.addEventListener('click', analyzeImageWithTesseract);
+        analyzeButton.addEventListener('click', analyzeImageWithBackend);
         resetButton.addEventListener('click', resetAll);
         calcTypeSelect.addEventListener('change', calculateGOS);
         statInputIds.forEach(id => statInputs[id].addEventListener('input', calculateGOS));
         
-        // --- 新機能: コピーボタンのイベントリスナー ---
         copyHpButton.addEventListener('click', () => copyStatsToClipboard(hpColumnIds, copyHpButton, 'HPグループをコピー'));
         copyMpButton.addEventListener('click', () => copyStatsToClipboard(mpColumnIds, copyMpButton, 'MPグループをコピー'));
 
+        // --- Main Functions ---
 
         function handleImageSelect(event) {
             const file = event.target.files[0];
@@ -161,92 +180,67 @@
                 analyzeButton.classList.remove('hidden');
                 errorMessage.classList.add('hidden');
                 statusMessage.textContent = '';
+                // Base64データを保持（ヘッダー部分を取り除く）
+                base64ImageData = e.target.result.split(',')[1];
             };
             reader.readAsDataURL(file);
         }
 
-        async function analyzeImageWithTesseract() {
-            if (!imagePreview.src) {
+        async function analyzeImageWithBackend() {
+            if (!base64ImageData) {
                 showError("先に画像を選択してください。");
                 return;
             }
+            if (BACKEND_API_URL === 'YOUR_BACKEND_API_URL_HERE') {
+                showError('バックエンドAPIのURLが設定されていません。このHTMLファイルを編集してください。');
+                return;
+            }
             
-            setLoading(true);
-            updateStatus('準備中...');
+            setLoading(true, 'AIが解析中...');
 
             try {
-                const worker = await Tesseract.createWorker('jpn+eng', 1, {
-                    logger: m => {
-                        if(m.status === "recognizing text"){
-                            const progress = (m.progress * 100).toFixed(0);
-                            updateStatus(`画像を解析中... ${progress}%`);
-                        } else {
-                            updateStatus(`${m.status}...`);
-                        }
-                    },
+                const response = await fetch(BACKEND_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageData: base64ImageData }),
                 });
 
-                const { data: { text } } = await worker.recognize(imagePreview.src);
-                await worker.terminate();
-                
-                parseAndPopulate(text);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `サーバーエラーが発生しました (コード: ${response.status})`);
+                }
+
+                const data = await response.json();
+                populateForm(data);
                 calculateGOS();
+                updateStatus('自動入力が完了しました！', 'success');
 
             } catch (error) {
-                console.error('Tesseract.js Error:', error);
-                showError("画像の解析に失敗しました。画像の向きや鮮明さを確認して再度お試しください。");
+                console.error('Backend Error:', error);
+                showError(`解析に失敗しました: ${error.message}`);
             } finally {
                 setLoading(false);
             }
         }
         
-        function parseAndPopulate(text) {
-             const cleanedText = text.replace(/ /g, '').replace(/S/g, '5').replace(/O/g, '0').replace(/I/g, '1').replace(/l/g, '1');
-
-             const mappings = [
-                 { key: 'hp', regex: /HP(\d+)/ },
-                 { key: 'mp', regex: /MP(\d+)/ },
-                 { key: 'attack', regex: /(?:攻撃|攻擊)(\d+)/ },
-                 { key: 'defense', regex: /防御(\d+)/ },
-                 { key: 'magicAttack', regex: /魔法攻撃(\d+)/ },
-                 { key: 'castingSpeed', regex: /(?:詠唱速度|这增速度)(\d+)/ },
-                 { key: 'strength', regex: /腕力(\d+)/ },
-                 { key: 'vitality', regex: /体力(\d+)/ },
-                 { key: 'speed', regex: /速さ(\d+)/ },
-                 { key: 'intelligence', regex: /知力(\d+)/ },
-                 { key: 'dexterity', regex: /(?:器用|器月|器)(\d+)/ },
-                 { key: 'mind', regex: /精神(\d+)/ },
-                 { key: 'maxPhysicalCritMultiplier', regex: /(?:物理CRI倍率|物理CRI倍|物理CR倍率|物理CR倍|物理CRI倍率).*\D(\d+)/ },
-                 { key: 'maxMagicalCritMultiplier', regex: /(?:魔法CRI倍率|魔法CRI倍|魔法CR倍率|魔法CR倍|魔法CRl倍率|魔法CRl倍).*\D(\d+)/ }
-             ];
-            
-             mappings.forEach(({ key, regex }) => {
-                 const match = cleanedText.match(regex);
-                 if (match) {
-                     const valueToSet = match[match.length - 1];
-                     if (valueToSet && statInputs[key]) {
-                         statInputs[key].value = parseInt(valueToSet, 10);
-                     }
-                 }
-             });
-            
+        function populateForm(data) {
              const unfilledFields = [];
              statInputIds.forEach(id => {
-                 if (!statInputs[id].value) {
+                 if (data.hasOwnProperty(id) && data[id] !== 0) {
+                     statInputs[id].value = data[id];
+                 } else {
                      const label = document.querySelector(`label[for="${id}"]`);
                      if (label) {
                          let fieldName = label.textContent.replace(':', '');
-                          if (id === 'maxPhysicalCritMultiplier') fieldName = 'Max物クリ倍';
-                          if (id === 'maxMagicalCritMultiplier') fieldName = 'Max魔クリ倍';
                          unfilledFields.push(fieldName);
                      }
                  }
              });
-            
+
              if (unfilledFields.length > 0) {
-                 updateStatus(`自動入力完了！${unfilledFields.join('、')}は読み取れませんでした。手動での入力をお願いします！`, 'warning');
+                 updateStatus(`自動入力完了！一部項目(${unfilledFields.join('、')})は手動で入力をお願いします。`, 'warning');
              } else {
-                 updateStatus('自動入力が完了しました！', 'success');
+                 updateStatus('全ての項目を自動入力しました！', 'success');
              }
         }
 
@@ -275,28 +269,16 @@
             gosResultSpan.textContent = Math.round(gos);
         }
         
-        /**
-         * 指定されたIDの入力値を取得し、クリップボードにコピーする関数
-         * @param {string[]} idsToCopy - コピーするinput要素のIDの配列
-         * @param {HTMLElement} buttonElement - クリックされたボタン要素
-         * @param {string} originalButtonText - ボタンの元のテキスト
-         */
         function copyStatsToClipboard(idsToCopy, buttonElement, originalButtonText) {
-            const values = idsToCopy.map(id => {
-                const input = document.getElementById(id);
-                return input ? input.value : '';
-            });
-            
+            const values = idsToCopy.map(id => document.getElementById(id)?.value || '');
             const textToCopy = values.join('\n');
             
-            // execCommandは非推奨ですが、iframe環境でのクリップボードAPIの制限を回避するため使用します
             const textArea = document.createElement('textarea');
             textArea.value = textToCopy;
             document.body.appendChild(textArea);
             textArea.select();
             try {
                 document.execCommand('copy');
-                // ユーザーにフィードバック
                 buttonElement.textContent = 'コピーしました！';
                 buttonElement.classList.add('bg-green-600', 'hover:bg-green-700');
                 buttonElement.classList.remove('bg-stone-500', 'hover:bg-stone-600');
@@ -308,7 +290,6 @@
             }
             document.body.removeChild(textArea);
 
-            // 2秒後にボタンの表示を元に戻す
             setTimeout(() => {
                 buttonElement.textContent = originalButtonText;
                 buttonElement.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-red-600', 'hover:bg-red-700');
@@ -324,15 +305,21 @@
             analyzeButton.classList.add('hidden');
             errorMessage.classList.add('hidden');
             statusMessage.textContent = '';
+            loader.classList.add('hidden');
             imageUploadInput.value = '';
             calculateGOS();
         }
         
-        function setLoading(isLoading) {
+        // --- Helper Functions ---
+        
+        function setLoading(isLoading, message = '') {
+            analyzeButton.disabled = isLoading;
             if (isLoading) {
-                analyzeButton.classList.add('hidden');
+                loader.classList.remove('hidden');
+                statusMessage.textContent = message;
             } else {
-                 analyzeButton.classList.remove('hidden');
+                loader.classList.add('hidden');
+                // メッセージはupdateStatusに任せる
             }
         }
         
@@ -353,6 +340,7 @@
             errorMessage.textContent = message;
             errorMessage.classList.remove('hidden');
             statusMessage.textContent = '';
+            loader.classList.add('hidden');
         }
 
         calculateGOS();
